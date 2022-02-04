@@ -1,0 +1,20 @@
+version: '2.3'
+
+services:
+
+  cut:
+    image: cut
+    container_name: cut
+    working_dir: /cut
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.cut
+    volumes:
+      - ../:/cut
+      - /media/enric_hdd/datasets/polyp-data/:/polyp-data:ro
+      - ../
+    runtime: nvidia
+    shm_size: '12gb'
+    command: tail /dev/null -f
+
+# python train.py --dataroot ./datasets/synth_polyp_V10 --name synth_polyp_V10.1 --CUT_mode CUT
