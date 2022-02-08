@@ -12,7 +12,6 @@ services:
     volumes:
       - ../:/cut
       - /media/enric_hdd/datasets/polyp-data/:/polyp-data:ro
-      - ../
     runtime: nvidia
     shm_size: '12gb'
     command: tail /dev/null -f
