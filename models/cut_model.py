@@ -4,7 +4,8 @@ from .base_model import BaseModel
 from . import networks
 from .patchnce import PatchNCELoss
 import util.util as util
-from .segmentation_model import UNet
+import segmentation_models_pytorch as smp
+import torchvision
 
 
 class CUTModel(BaseModel):
@@ -75,7 +76,12 @@ class CUTModel(BaseModel):
         # define networks (both generator and discriminator)
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, opt.no_antialias_up, self.gpu_ids, opt)
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
-        self.segModel = UNet(1)
+        self.segModel = self.net = smp.Unet(
+            encoder_name="resnet18",        
+            encoder_weights="imagenet",     
+            in_channels=3,                  
+            classes=1,                
+        )
         self.segModel = self.segModel.to(self.gpu_ids[0])
 
         if self.isTrain:
@@ -84,6 +90,7 @@ class CUTModel(BaseModel):
             # define loss functions
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
             self.criterionNCE = []
+            self.criterionSeg = smp.losses.DiceLoss(mode='binary').to(self.device)
 
             for nce_layer in self.nce_layers:
                 self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
@@ -150,7 +157,7 @@ class CUTModel(BaseModel):
         """
         AtoB = self.opt.direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        self.real_A_seg = input['A_seg'][:,0][None].to(self.device) # TODO transform size [1, 3, 256, 256] to [1, 1, 256, 256]
+        self.real_A_seg = torchvision.transforms.functional.rgb_to_grayscale(input['A_seg']).to(self.device) # TODO transform size [4, 3, 256, 256] to [4, 1, 256, 256]
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
@@ -164,7 +171,7 @@ class CUTModel(BaseModel):
 
         self.fake = self.netG(self.real)
         # TODO forward self.fake to segmentation model
-        self.segmentation = self.segModel(self.fake[0][None])
+        self.segmentation = self.segModel(self.fake[:self.real_A.size(0)])
 
         self.fake_B = self.fake[:self.real_A.size(0)]
         if self.opt.nce_idt:
@@ -207,7 +214,7 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.seg_loss = self.dice_loss(self.segmentation, self.real_A_seg)
+        self.seg_loss = self.criterionSeg(self.segmentation, self.real_A_seg)
 
         # TODO Add segmentation loss
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.seg_loss
@@ -230,28 +237,3 @@ class CUTModel(BaseModel):
             total_nce_loss += loss.mean()
 
         return total_nce_loss / n_layers
-
-    def dice_coeff(self, input, target, reduce_batch_first, epsilon=1e-6):
-        # Average of Dice coefficient for all batches, or for a single mask
-        assert input.size() == target.size()
-        if input.dim() == 2 and reduce_batch_first:
-            raise ValueError(f'Dice: asked to reduce batch but got tensor without batch dimension (shape {input.shape})')
-
-        if input.dim() == 2 or reduce_batch_first:
-            inter = torch.dot(input.reshape(-1), target.reshape(-1))
-            sets_sum = torch.sum(input) + torch.sum(target)
-            if sets_sum.item() == 0:
-                sets_sum = 2 * inter
-
-            return (2 * inter + epsilon) / (sets_sum + epsilon)
-        else:
-            # compute and average metric for each batch element
-            dice = 0
-            for i in range(input.shape[0]):
-                dice += dice_coeff(input[i, ...], target[i, ...])
-            return dice / input.shape[0]
-
-    def dice_loss(self, input, target):
-        # Dice loss (objective to minimize) between 0 and 1
-        assert input.size() == target.size()
-        return 1 - self.dice_coeff(input, target, reduce_batch_first=True) #TODO why 1 - loss?
