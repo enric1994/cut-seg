@@ -78,7 +78,7 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         self.segModel = self.net = smp.Unet(
             encoder_name="resnet18",        
-            encoder_weights="imagenet",     
+            encoder_weights=None,     
             in_channels=3,                  
             classes=1,                
         )
@@ -96,12 +96,14 @@ class CUTModel(BaseModel):
                 self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
 
             self.criterionIdt = torch.nn.L1Loss().to(self.device)
-            self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
+            # self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
+            params = list(self.netG.parameters()) + list(self.segModel.parameters())
+            self.optimizer_G = torch.optim.Adam(params, lr=opt.lr, betas=(opt.beta1, opt.beta2))
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
-            self.optimizer_Seg = torch.optim.Adam(self.segModel.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
+            # self.optimizer_Seg = torch.optim.Adam(self.segModel.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
-            self.optimizers.append(self.optimizer_Seg)
+            # self.optimizers.append(self.optimizer_Seg)
 
     def data_dependent_initialize(self, data):
         """
@@ -134,6 +136,7 @@ class CUTModel(BaseModel):
         self.optimizer_D.step()
 
         # update G
+        print(self.segModel.decoder.blocks[0].conv1[0].weight[0][0])
         self.set_requires_grad(self.netD, False)
         self.optimizer_G.zero_grad()
         if self.opt.netF == 'mlp_sample':
@@ -157,7 +160,10 @@ class CUTModel(BaseModel):
         """
         AtoB = self.opt.direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        self.real_A_seg = torchvision.transforms.functional.rgb_to_grayscale(input['A_seg']).to(self.device) # TODO transform size [4, 3, 256, 256] to [4, 1, 256, 256]
+        # input['A_seg'][:,0][:,None]
+        # self.real_A_seg = torchvision.transforms.functional.rgb_to_grayscale(input['A_seg']).to(self.device) # TODO transform size [4, 3, 256, 256] to [4, 1, 256, 256]
+        self.real_A_seg = input['A_seg'][:,0][:,None].to(self.device)
+        # import pdb;pdb.set_trace()
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
@@ -214,7 +220,9 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.seg_loss = self.criterionSeg(self.segmentation, self.real_A_seg)
+        self.seg_loss = self.dice_loss(self.segmentation, self.real_A_seg)
+        # self.criterionSeg(self.segmentation, self.real_A_seg)
+        # import pdb;pdb.set_trace()
 
         # TODO Add segmentation loss
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.seg_loss
@@ -237,3 +245,28 @@ class CUTModel(BaseModel):
             total_nce_loss += loss.mean()
 
         return total_nce_loss / n_layers
+
+    def dice_coeff(self, input, target, reduce_batch_first, epsilon=1e-6):
+        # Average of Dice coefficient for all batches, or for a single mask
+        assert input.size() == target.size()
+        if input.dim() == 2 and reduce_batch_first:
+            raise ValueError(f'Dice: asked to reduce batch but got tensor without batch dimension (shape {input.shape})')
+
+        if input.dim() == 2 or reduce_batch_first:
+            inter = torch.dot(input.reshape(-1), target.reshape(-1))
+            sets_sum = torch.sum(input) + torch.sum(target)
+            if sets_sum.item() == 0:
+                sets_sum = 2 * inter
+
+            return (2 * inter + epsilon) / (sets_sum + epsilon)
+        else:
+            # compute and average metric for each batch element
+            dice = 0
+            for i in range(input.shape[0]):
+                dice += dice_coeff(input[i, ...], target[i, ...])
+            return dice / input.shape[0]
+
+    def dice_loss(self, input, target):
+        # Dice loss (objective to minimize) between 0 and 1
+        assert input.size() == target.size()
+        return 1 - self.dice_coeff(input, target, reduce_batch_first=True) #TODO why 1 - loss?
