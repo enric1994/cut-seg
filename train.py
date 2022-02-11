@@ -5,11 +5,22 @@ from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
 
+from torchvision import transforms
+from data.val_dataset import ValDataset
+from torch.utils.data import DataLoader
+import segmentation_models_pytorch as smp
+
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
+
+    val_data = ValDataset('/cut/datasets/synth_polyp_V10')
+    # opt.batch_size
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=opt.num_threads)
+    dice_loss=smp.losses.DiceLoss(mode='binary')
+    # image2tensor = transforms.PILToTensor()
 
     model = create_model(opt)      # create a model given opt.model and other options
     print('The number of training images = %d' % dataset_size)
@@ -78,15 +89,23 @@ if __name__ == '__main__':
 
     
         # Test dataset
+        # val_data = ValDataset('root_path!')
         # test=val
         # load testB, testB_seg in dataloader
         # 
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        model.eval()
+        total = 0
+        total_dice = 0
+        with torch.no_grad():
 
-        # import pdb;pdb.set_trace()
-        # for 
-        # model.eval()
-        # with torch.no_grad():
-        #     pred = model.netS(image)
+            for image, mask in val_dataloader:
+                image = image.to(device)
+                mask = mask.to(device)
+                pred = model.netS(image)
+                total_dice+= dice_loss(mask,pred).item()
+                total+=1
+            print('Mean DICE:', total_dice/total)
 
         # comapre iou/dice/bce
 
