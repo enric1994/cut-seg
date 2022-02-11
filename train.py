@@ -75,3 +75,33 @@ if __name__ == '__main__':
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
+
+    
+        # Test dataset
+        # test=val
+        # load testB, testB_seg in dataloader
+        # 
+
+        # import pdb;pdb.set_trace()
+        # for 
+        # model.eval()
+        # with torch.no_grad():
+        #     pred = model.netS(image)
+
+        # comapre iou/dice/bce
+
+
+
+
+        # Synth polyp V11
+        # trainA: 20.000
+        # trainA_seg: 20.000
+        # trainB: 1400*0.8 (from train folder)
+        # trainB_seg: same
+
+        # valA: 1.000 (from synth dataset)
+        # valA_seg: same
+        # valB: 1400*0.2 from (train folder)
+        # valB_seg: same
+
+        # test will be done directly on polyp dataset/test

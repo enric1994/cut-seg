@@ -60,7 +60,7 @@ class CUTModel(BaseModel):
 
         # specify the training losses you want to print out.
         # The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE']
+        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE', 'S']
         self.visual_names = ['real_A', 'real_A_seg', 'segmentation', 'fake_B', 'real_B']
         self.nce_layers = [int(i) for i in self.opt.nce_layers.split(',')]
 
@@ -69,20 +69,20 @@ class CUTModel(BaseModel):
             self.visual_names += ['idt_B']
 
         if self.isTrain:
-            self.model_names = ['G', 'F', 'D']
+            self.model_names = ['G', 'F', 'D', 'S']
         else:  # during test time, only load G
             self.model_names = ['G']
 
         # define networks (both generator and discriminator)
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, opt.no_antialias_up, self.gpu_ids, opt)
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
-        self.segModel = self.net = smp.Unet(
+        self.netS = self.net = smp.Unet(
             encoder_name="resnet18",        
             encoder_weights=None,     
             in_channels=3,                  
             classes=1,                
         )
-        self.segModel = self.segModel.to(self.gpu_ids[0])
+        self.netS = self.netS.to(self.gpu_ids[0])
 
         if self.isTrain:
             self.netD = networks.define_D(opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.normD, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
@@ -98,7 +98,7 @@ class CUTModel(BaseModel):
 
             self.criterionIdt = torch.nn.L1Loss().to(self.device)
             # self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
-            params = list(self.netG.parameters()) + list(self.segModel.parameters())
+            params = list(self.netG.parameters()) + list(self.netS.parameters())
             self.optimizer_G = torch.optim.Adam(params, lr=opt.lr, betas=(opt.beta1, opt.beta2))
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
             # self.optimizer_Seg = torch.optim.Adam(self.segModel.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
@@ -178,7 +178,7 @@ class CUTModel(BaseModel):
 
         self.fake = self.netG(self.real)
         # TODO forward self.fake to segmentation model
-        self.segmentation = self.segModel(self.fake[:self.real_A.size(0)])
+        self.segmentation = self.netS(self.fake[:self.real_A.size(0)])
         # self.segmentation = self.segModel(self.real_A)
 
         self.fake_B = self.fake[:self.real_A.size(0)]
@@ -222,13 +222,13 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.seg_loss = self.criterionSeg(self.segmentation, self.real_A_seg)
+        self.loss_S = self.criterionSeg(self.segmentation, self.real_A_seg)
         # self.dice_loss(self.segmentation, self.real_A_seg)
         # self.criterionSeg(self.segmentation, self.real_A_seg)
         # import pdb;pdb.set_trace()
 
         # TODO Add segmentation loss
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.seg_loss*0.1
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S*0.1
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
