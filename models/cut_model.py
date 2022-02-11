@@ -90,7 +90,8 @@ class CUTModel(BaseModel):
             # define loss functions
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
             self.criterionNCE = []
-            self.criterionSeg = smp.losses.DiceLoss(mode='binary').to(self.device)
+            # self.criterionSeg = smp.losses.DiceLoss(mode='binary').to(self.device)
+            self.criterionSeg = torch.nn.BCEWithLogitsLoss().to(self.device)
 
             for nce_layer in self.nce_layers:
                 self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
@@ -136,7 +137,7 @@ class CUTModel(BaseModel):
         self.optimizer_D.step()
 
         # update G
-        print(self.segModel.decoder.blocks[0].conv1[0].weight[0][0])
+        # print(self.segModel.decoder.blocks[0].conv1[0].weight[0][0])
         self.set_requires_grad(self.netD, False)
         self.optimizer_G.zero_grad()
         if self.opt.netF == 'mlp_sample':
@@ -178,6 +179,7 @@ class CUTModel(BaseModel):
         self.fake = self.netG(self.real)
         # TODO forward self.fake to segmentation model
         self.segmentation = self.segModel(self.fake[:self.real_A.size(0)])
+        # self.segmentation = self.segModel(self.real_A)
 
         self.fake_B = self.fake[:self.real_A.size(0)]
         if self.opt.nce_idt:
@@ -220,12 +222,13 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.seg_loss = self.dice_loss(self.segmentation, self.real_A_seg)
+        self.seg_loss = self.criterionSeg(self.segmentation, self.real_A_seg)
+        # self.dice_loss(self.segmentation, self.real_A_seg)
         # self.criterionSeg(self.segmentation, self.real_A_seg)
         # import pdb;pdb.set_trace()
 
         # TODO Add segmentation loss
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.seg_loss
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.seg_loss*0.1
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
