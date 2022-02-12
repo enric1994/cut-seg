@@ -78,7 +78,7 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         self.netS = self.net = smp.Unet(
             encoder_name="resnet18",        
-            encoder_weights=None,     
+            encoder_weights="imagenet",     
             in_channels=3,                  
             classes=1,                
         )
@@ -91,7 +91,7 @@ class CUTModel(BaseModel):
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
             self.criterionNCE = []
             # self.criterionSeg = smp.losses.DiceLoss(mode='binary').to(self.device)
-            self.criterionSeg = torch.nn.BCEWithLogitsLoss().to(self.device)
+            self.criterionSeg = smp.losses.DiceLoss(mode='binary', ignore_index=-1)
 
             for nce_layer in self.nce_layers:
                 self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
@@ -228,7 +228,7 @@ class CUTModel(BaseModel):
         # import pdb;pdb.set_trace()
 
         # TODO Add segmentation loss
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S*0.1
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
@@ -248,28 +248,3 @@ class CUTModel(BaseModel):
             total_nce_loss += loss.mean()
 
         return total_nce_loss / n_layers
-
-    def dice_coeff(self, input, target, reduce_batch_first, epsilon=1e-6):
-        # Average of Dice coefficient for all batches, or for a single mask
-        assert input.size() == target.size()
-        if input.dim() == 2 and reduce_batch_first:
-            raise ValueError(f'Dice: asked to reduce batch but got tensor without batch dimension (shape {input.shape})')
-
-        if input.dim() == 2 or reduce_batch_first:
-            inter = torch.dot(input.reshape(-1), target.reshape(-1))
-            sets_sum = torch.sum(input) + torch.sum(target)
-            if sets_sum.item() == 0:
-                sets_sum = 2 * inter
-
-            return (2 * inter + epsilon) / (sets_sum + epsilon)
-        else:
-            # compute and average metric for each batch element
-            dice = 0
-            for i in range(input.shape[0]):
-                dice += dice_coeff(input[i, ...], target[i, ...])
-            return dice / input.shape[0]
-
-    def dice_loss(self, input, target):
-        # Dice loss (objective to minimize) between 0 and 1
-        assert input.size() == target.size()
-        return 1 - self.dice_coeff(input, target, reduce_batch_first=True) #TODO why 1 - loss?

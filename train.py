@@ -94,7 +94,7 @@ if __name__ == '__main__':
         # load testB, testB_seg in dataloader
         # 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model.eval()
+        model.netS.eval()
         total = 0
         total_dice = 0
         with torch.no_grad():
@@ -106,7 +106,7 @@ if __name__ == '__main__':
                 total_dice+= dice_loss(mask,pred).item()
                 total+=1
             print('Mean DICE:', total_dice/total)
-
+        model.netS.train()
         # comapre iou/dice/bce
 
 
