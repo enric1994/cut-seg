@@ -12,8 +12,9 @@ services:
     volumes:
       - ../:/cut
       - /media/enric_hdd/datasets/polyp-data/:/polyp-data:ro
+      - /media/enric_hdd/datasets/synth-colon/:/synth-colon:ro
     runtime: nvidia
     shm_size: '12gb'
     command: tail /dev/null -f
 
-# python train.py --dataroot ./datasets/synth_polyp_V10 --name synth_polyp_V10.1 --CUT_mode CUT
+# python train.py --dataroot ./datasets/synth_polyp_V11 --name synth_polyp_V11.0 --CUT_mode CUT > synth_polyp_V11.0.logs

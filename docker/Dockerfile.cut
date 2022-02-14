@@ -1,6 +1,6 @@
 # Select a base image:
 
-FROM pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-runtime
+FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-runtime
 RUN pip install thop imageio torchstat scipy dominate>=2.4.0 visdom>=0.1.8.8 packaging segmentation-models-pytorch
 RUN apt update -y && apt install wget unzip -y
 

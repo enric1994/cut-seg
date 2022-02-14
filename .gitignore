@@ -1,3 +1,5 @@
+datasets/
+*.logs
 *.xml
 *.json
 .ipynb_checkpoints/

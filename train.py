@@ -16,7 +16,7 @@ if __name__ == '__main__':
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
 
-    val_data = ValDataset('/cut/datasets/synth_polyp_V10')
+    val_data = ValDataset('/cut/datasets/synth_polyp_V11')
     # opt.batch_size
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=opt.num_threads)
     dice_loss=smp.losses.DiceLoss(mode='binary')
