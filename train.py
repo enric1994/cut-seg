@@ -1,9 +1,11 @@
 import time
+import os
 import torch
 from options.train_options import TrainOptions
 from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
+from torchvision.utils import save_image
 
 from torchvision import transforms
 from data.val_dataset import ValDataset
@@ -16,10 +18,11 @@ if __name__ == '__main__':
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
 
-    val_data = ValDataset('/cut/datasets/synth_polyp_V11')
+    val_data = ValDataset(opt.dataroot)
     # opt.batch_size
-    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=opt.num_threads)
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, num_workers=opt.num_threads)
     dice_loss=smp.losses.DiceLoss(mode='binary')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # image2tensor = transforms.PILToTensor()
 
     model = create_model(opt)      # create a model given opt.model and other options
@@ -89,11 +92,8 @@ if __name__ == '__main__':
 
     
         # Test dataset
-        # val_data = ValDataset('root_path!')
-        # test=val
-        # load testB, testB_seg in dataloader
-        # 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        os.makedirs('/cut/checkpoints/{}/val/epoch_{}'.format(opt.name, epoch), exist_ok=True)
+        
         model.netS.eval()
         total = 0
         total_dice = 0
@@ -105,22 +105,13 @@ if __name__ == '__main__':
                 pred = model.netS(image)
                 total_dice+= dice_loss(mask,pred).item()
                 total+=1
+
+                if total < 5:
+                    pred_path = '/cut/checkpoints/{}/val/epoch_{}/pred_{}.png'.format(opt.name, epoch, total)
+                    save_image(pred[0], pred_path)
+
+                    image_path = '/cut/checkpoints/{}/val/epoch_{}/image_{}.png'.format(opt.name, epoch, total)
+                    save_image(image[0], image_path)
             print('Mean DICE:', total_dice/total)
         model.netS.train()
-        # comapre iou/dice/bce
 
-
-
-
-        # Synth polyp V11
-        # trainA: 20.000
-        # trainA_seg: 20.000
-        # trainB: 1400*0.8 (from train folder)
-        # trainB_seg: same
-
-        # valA: 1.000 (from synth dataset)
-        # valA_seg: same
-        # valB: 1400*0.2 from (train folder)
-        # valB_seg: same
-
-        # test will be done directly on polyp dataset/test

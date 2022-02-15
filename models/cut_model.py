@@ -76,7 +76,7 @@ class CUTModel(BaseModel):
         # define networks (both generator and discriminator)
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, opt.no_antialias_up, self.gpu_ids, opt)
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
-        self.netS = self.net = smp.Unet(
+        self.netS = smp.Unet(
             encoder_name="resnet18",        
             encoder_weights="imagenet",     
             in_channels=3,                  
@@ -91,7 +91,9 @@ class CUTModel(BaseModel):
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
             self.criterionNCE = []
             # self.criterionSeg = smp.losses.DiceLoss(mode='binary').to(self.device)
-            self.criterionSeg = smp.losses.DiceLoss(mode='binary', ignore_index=-1)
+            self.criterionSeg = smp.losses.DiceLoss(mode='binary', log_loss=True, ignore_index=-1)
+            # torch.nn.BCEWithLogitsLoss()
+            # smp.losses.DiceLoss(mode='binary', ignore_index=-1)
 
             for nce_layer in self.nce_layers:
                 self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
@@ -178,6 +180,7 @@ class CUTModel(BaseModel):
 
         self.fake = self.netG(self.real)
         # TODO forward self.fake to segmentation model
+        # import pdb;pdb.set_trace()
         self.segmentation = self.netS(self.fake[:self.real_A.size(0)])
         # self.segmentation = self.segModel(self.real_A)
 
@@ -228,7 +231,7 @@ class CUTModel(BaseModel):
         # import pdb;pdb.set_trace()
 
         # TODO Add segmentation loss
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S * 10
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
