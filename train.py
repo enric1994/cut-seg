@@ -21,7 +21,8 @@ if __name__ == '__main__':
     val_data = ValDataset(opt.dataroot)
     # opt.batch_size
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, num_workers=opt.num_threads)
-    dice_loss=smp.losses.DiceLoss(mode='binary')
+    # dice_loss=smp.losses.DiceLoss(mode='binary', log_loss=True, ignore_index=-1)
+    iou = smp.utils.metrics.IoU()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # image2tensor = transforms.PILToTensor()
 
@@ -103,7 +104,8 @@ if __name__ == '__main__':
                 image = image.to(device)
                 mask = mask.to(device)
                 pred = model.netS(image)
-                total_dice+= dice_loss(mask,pred).item()
+                l = iou(pred,mask).item()
+                total_dice+= l
                 total+=1
 
                 if total < 5:
@@ -112,6 +114,6 @@ if __name__ == '__main__':
 
                     image_path = '/cut/checkpoints/{}/val/epoch_{}/image_{}.png'.format(opt.name, epoch, total)
                     save_image(image[0], image_path)
-            print('Mean DICE:', total_dice/total)
+            print('Mean IOU:', total_dice/total)
         model.netS.train()
 

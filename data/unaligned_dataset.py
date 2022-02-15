@@ -1,5 +1,5 @@
 import os.path
-from data.base_dataset import BaseDataset, get_transform
+from data.base_dataset import BaseDataset, get_transform, get_transform_mask
 from data.image_folder import make_dataset
 from PIL import Image
 import random
@@ -70,8 +70,9 @@ class UnalignedDataset(BaseDataset):
         is_finetuning = self.opt.isTrain and self.current_epoch > self.opt.n_epochs
         modified_opt = util.copyconf(self.opt, load_size=self.opt.crop_size if is_finetuning else self.opt.load_size)
         transform = get_transform(modified_opt)
+        transform_mask = get_transform_mask(modified_opt)
         A = transform(A_img)
-        A_seg = transform(A_seg_img) # TODO transform must be the same in A and A_seg
+        A_seg = transform_mask(A_seg_img) # TODO transform must be the same in A and A_seg
         B = transform(B_img)
 
         return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path}
