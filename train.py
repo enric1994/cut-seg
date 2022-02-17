@@ -35,6 +35,8 @@ if __name__ == '__main__':
 
     optimize_time = 0.1
 
+    best_iou = 0.0
+
     times = []
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
@@ -97,7 +99,7 @@ if __name__ == '__main__':
         
         model.netS.eval()
         total = 0
-        total_dice = 0
+        total_iou = 0
         with torch.no_grad():
 
             for image, mask in val_dataloader:
@@ -105,7 +107,7 @@ if __name__ == '__main__':
                 mask = mask.to(device)
                 pred = model.netS(image)
                 l = iou(pred,mask).item()
-                total_dice+= l
+                total_iou+= l
                 total+=1
 
                 if total < 5:
@@ -114,6 +116,11 @@ if __name__ == '__main__':
 
                     image_path = '/cut/checkpoints/{}/val/epoch_{}/image_{}.png'.format(opt.name, epoch, total)
                     save_image(image[0], image_path)
-            print('Mean IOU:', total_dice/total)
+            current_iou = total_iou/total
+            if current_iou >= best_iou:
+                print('Overwrite best model')
+                torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, '_best.pth'))
+                best_iou = current_iou
+            print('Mean IOU:', current_iou)
         model.netS.train()
 

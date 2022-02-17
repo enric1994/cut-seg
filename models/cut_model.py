@@ -76,12 +76,27 @@ class CUTModel(BaseModel):
         # define networks (both generator and discriminator)
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, opt.no_antialias_up, self.gpu_ids, opt)
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
-        self.netS = smp.Unet(
-            encoder_name="resnet18",        
-            encoder_weights="imagenet",     
-            in_channels=3,                  
-            classes=1,                
-        )
+        
+        
+        # smp.Unet(
+        #     encoder_name="resnet18",        
+        #     encoder_weights="imagenet",     
+        #     in_channels=3,                  
+        #     classes=1,                
+        # )
+        self.netS = smp.MAnet(
+            encoder_name='resnet18',
+            encoder_depth=5, 
+            encoder_weights='imagenet', 
+            decoder_use_batchnorm=True, 
+            decoder_channels=(256, 128, 64, 32, 16), 
+            decoder_pab_channels=64, 
+            in_channels=3, 
+            classes=1, 
+            activation=None, 
+            aux_params=None
+            )
+
         self.netS = self.netS.to(self.gpu_ids[0])
 
         if self.isTrain:
@@ -225,13 +240,10 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.loss_S = self.criterionSeg(self.segmentation, self.real_A_seg)
-        # self.dice_loss(self.segmentation, self.real_A_seg)
-        # self.criterionSeg(self.segmentation, self.real_A_seg)
-        # import pdb;pdb.set_trace()
+        self.loss_S = self.criterionSeg(self.segmentation, self.real_A_seg) * 10
 
         # TODO Add segmentation loss
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S * 10
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
