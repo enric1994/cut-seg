@@ -33,9 +33,9 @@ class ValDataset(Dataset):
     def __getitem__(self, idx):
 
         A_img = cv2.imread(os.path.join(self.root_dir, 'valB', self.images[idx]))
-        A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
+        # A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
 
-        A_seg_img = cv2.imread(os.path.join(self.root_dir, 'valB_seg', self.masks[idx]), cv2.IMREAD_UNCHANGED)//255
+        A_seg_img = cv2.imread(os.path.join(self.root_dir, 'valB_seg', self.masks[idx]), cv2.IMREAD_GRAYSCALE)//255
 
 
         A_transformed = self.transform(image=A_img, mask=A_seg_img)

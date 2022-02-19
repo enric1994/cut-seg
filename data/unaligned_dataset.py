@@ -73,12 +73,12 @@ class UnalignedDataset(BaseDataset):
         B_path = self.B_paths[index_B]
 
         A_img = cv2.imread(A_path)
-        A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
+        # A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
 
-        A_seg_img = cv2.imread(A_seg_path, cv2.IMREAD_UNCHANGED)//255
+        A_seg_img = cv2.imread(A_seg_path, cv2.IMREAD_GRAYSCALE)//255
 
         B_img = cv2.imread(B_path)
-        B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
+        # B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
 
 
         # Apply image transformation
@@ -95,7 +95,6 @@ class UnalignedDataset(BaseDataset):
 
         B_transformed = self.transform(image=B_img)
         B = B_transformed['image']
-
 
         return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path}
 
