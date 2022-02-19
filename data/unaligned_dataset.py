@@ -4,6 +4,9 @@ from data.image_folder import make_dataset
 from PIL import Image
 import random
 import util.util as util
+import albumentations as A
+import cv2
+from albumentations.pytorch import ToTensorV2
 
 
 class UnalignedDataset(BaseDataset):
@@ -40,6 +43,15 @@ class UnalignedDataset(BaseDataset):
         self.A_seg_size = len(self.A_seg_paths)  # get the size of dataset A
         self.B_size = len(self.B_paths)  # get the size of dataset B
 
+        self.transform = A.Compose([
+            A.Resize(286,286),
+            A.RandomCrop(width=256, height=256),
+            A.HorizontalFlip(p=0.5),
+            A.RandomBrightnessContrast(p=0.2),
+            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            ToTensorV2()
+        ])
+
     def __getitem__(self, index):
         """Return a data point and its metadata information.
 
@@ -59,9 +71,15 @@ class UnalignedDataset(BaseDataset):
         else:   # randomize the index for domain B to avoid fixed pairs.
             index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
-        A_img = Image.open(A_path).convert('RGB')
-        A_seg_img = Image.open(A_seg_path).convert('RGB')
-        B_img = Image.open(B_path).convert('RGB')
+
+        A_img = cv2.imread(A_path)
+        A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
+
+        A_seg_img = cv2.imread(A_seg_path, cv2.IMREAD_UNCHANGED)//255
+
+        B_img = cv2.imread(B_path)
+        B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
+
 
         # Apply image transformation
         # For FastCUT mode, if in finetuning phase (learning rate is decaying),
@@ -69,11 +87,15 @@ class UnalignedDataset(BaseDataset):
 #        print('current_epoch', self.current_epoch)
         is_finetuning = self.opt.isTrain and self.current_epoch > self.opt.n_epochs
         modified_opt = util.copyconf(self.opt, load_size=self.opt.crop_size if is_finetuning else self.opt.load_size)
-        transform = get_transform(modified_opt)
-        transform_mask = get_transform_mask(modified_opt)
-        A = transform(A_img)
-        A_seg = transform_mask(A_seg_img) # TODO transform must be the same in A and A_seg
-        B = transform(B_img)
+        
+
+        A_transformed = self.transform(image=A_img, mask=A_seg_img)
+        A = A_transformed['image']
+        A_seg = A_transformed['mask'][None]
+
+        B_transformed = self.transform(image=B_img)
+        B = B_transformed['image']
+
 
         return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path}
 

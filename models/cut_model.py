@@ -180,7 +180,7 @@ class CUTModel(BaseModel):
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
         # input['A_seg'][:,0][:,None]
         # self.real_A_seg = torchvision.transforms.functional.rgb_to_grayscale(input['A_seg']).to(self.device) # TODO transform size [4, 3, 256, 256] to [4, 1, 256, 256]
-        self.real_A_seg = input['A_seg'][:,0][:,None].to(self.device)
+        self.real_A_seg = input['A_seg'].to(self.device)
         # import pdb;pdb.set_trace()
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
@@ -240,7 +240,7 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.loss_S = self.criterionSeg(self.segmentation, self.real_A_seg) * 10
+        self.loss_S = self.criterionSeg(self.segmentation, self.real_A_seg)
 
         # TODO Add segmentation loss
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S

@@ -66,35 +66,28 @@ if __name__ == '__main__':
                 torch.cuda.synchronize()
             optimize_time = (time.time() - optimize_start_time) / batch_size * 0.005 + 0.995 * optimize_time
 
-            if total_iters % opt.display_freq == 0:   # display images on visdom and save images to a HTML file
-                save_result = total_iters % opt.update_html_freq == 0
-                model.compute_visuals()
-                visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
-
             if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
                 visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
-                if opt.display_id is None or opt.display_id > 0:
-                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
-
-            if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
-                print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
-                print(opt.name)  # it's useful to occasionally show the experiment name on console
-                save_suffix = 'iter_%d' % total_iters if opt.save_by_iter else 'latest'
-                model.save_networks(save_suffix)
 
             iter_data_time = time.time()
 
-        if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
-            print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
-            model.save_networks('latest')
-            model.save_networks(epoch)
+        model.compute_visuals()
+        visuals = model.get_current_visuals()
+        os.makedirs('/cut/checkpoints/{}/train/epoch_{}'.format(opt.name, epoch), exist_ok=True)
+        for image_type in visuals.keys():
+            for i, img in enumerate(visuals[image_type]):
+                img_path = '/cut/checkpoints/{}/train/epoch_{}/{}_{}.png'.format(opt.name, epoch, image_type, i)
+                if img.shape[0]==3:
+                    save_image(img, img_path)
+                else:
+                    save_image(img.repeat(3,1,1).float(), img_path)
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
 
     
-        # Test dataset
+        # Val dataset
         os.makedirs('/cut/checkpoints/{}/val/epoch_{}'.format(opt.name, epoch), exist_ok=True)
         
         model.netS.eval()
@@ -110,7 +103,7 @@ if __name__ == '__main__':
                 total_iou+= l
                 total+=1
 
-                if total < 5:
+                if total < 10:
                     pred_path = '/cut/checkpoints/{}/val/epoch_{}/pred_{}.png'.format(opt.name, epoch, total)
                     save_image(pred[0], pred_path)
 
@@ -124,3 +117,12 @@ if __name__ == '__main__':
             print('Mean IOU:', current_iou)
         model.netS.train()
 
+
+# TODO
+# fix channels albumentations
+# apply to validation
+# check if red images
+
+# save GAN image in val
+
+# data augemantation in synth or fake_real?

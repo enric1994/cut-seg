@@ -2,6 +2,9 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import os
 from PIL import Image
+import albumentations as A
+import cv2
+from albumentations.pytorch import ToTensorV2
 
 class ValDataset(Dataset):
 
@@ -12,18 +15,11 @@ class ValDataset(Dataset):
         self.images = os.listdir(images_path)
         self.masks = os.listdir(masks_path)
 
-        self.testsize = 256
 
-        self.transform_image = transforms.Compose([
-            transforms.Resize((self.testsize, self.testsize)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-
-        self.transform_mask = transforms.Compose([
-            transforms.Resize((self.testsize, self.testsize)),
-            transforms.ToTensor()
-            # transforms.Normalize((0.5,), (0.5,))
+        self.transform = A.Compose([
+            A.Resize(256,256),
+            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            ToTensorV2()
         ])
 
         # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -35,7 +31,15 @@ class ValDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        image = Image.open(os.path.join(self.root_dir, 'valB', self.images[idx])).convert('RGB')
-        mask = Image.open(os.path.join(self.root_dir, 'valB_seg',self.masks[idx])).convert('L')
 
-        return self.transform_image(image), self.transform_mask(mask)
+        A_img = cv2.imread(os.path.join(self.root_dir, 'valB', self.images[idx]))
+        A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
+
+        A_seg_img = cv2.imread(os.path.join(self.root_dir, 'valB_seg', self.masks[idx]), cv2.IMREAD_UNCHANGED)//255
+
+
+        A_transformed = self.transform(image=A_img, mask=A_seg_img)
+        A = A_transformed['image']
+        A_seg = A_transformed['mask'][None]
+
+        return A, A_seg

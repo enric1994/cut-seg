@@ -4,7 +4,7 @@ from data.test_dataset import TestDataset
 from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 
-experiment_name = 'synth_polyp_V11.8'
+experiment_name = 'synth_polyp_V11.11'
 
 base_path = "/polyp-data/TestDataset"
 dataset_names = ["CVC-300", "CVC-ClinicDB", "CVC-ColonDB", "ETIS-LaribPolypDB", "Kvasir"]
@@ -15,6 +15,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 model_path = '/cut/checkpoints/{}/_best.pth'.format(experiment_name)
 model = torch.load(model_path)
+model = model.to(device)
 model.eval()
 
 for dataset_name in dataset_names:
