@@ -11,8 +11,8 @@ services:
       dockerfile: docker/Dockerfile.cut
     volumes:
       - ../:/cut
-      - /media/enric_hdd/datasets/polyp-data/:/polyp-data:ro
-      - /media/enric_hdd/datasets/synth-colon/:/synth-colon:ro
+      - /home/eric/Projects/PostDoc/SynthData/data/polyp-data/:/polyp-data:ro
+      - /home/eric/Projects/PostDoc/SynthData/data/synth-colon/:/synth-colon:ro
     runtime: nvidia
     shm_size: '12gb'
     command: tail /dev/null -f

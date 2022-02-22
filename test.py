@@ -4,7 +4,7 @@ from data.test_dataset import TestDataset
 from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 
-experiment_name = 'synth_polyp_V11.11'
+experiment_name = 'cut_200.1'
 
 base_path = "/polyp-data/TestDataset"
 dataset_names = ["CVC-300", "CVC-ClinicDB", "CVC-ColonDB", "ETIS-LaribPolypDB", "Kvasir"]
