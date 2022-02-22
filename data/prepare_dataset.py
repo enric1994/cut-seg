@@ -4,10 +4,11 @@ import shutil
 
 synth_dataset = '/synth-colon'
 real_dataset = '/polyp-data/TrainDataset'
-target_name = 'synth_polyp_V11'
-train_size_real = 1000
-val_size_real = 400
-train_size_synth = 5000
+# target_name = 'synth_polyp_V11'
+target_name = 'cut_200'
+train_size_real = 200
+val_size_real = 100
+train_size_synth = 100
 
 os.makedirs('/cut/datasets/{}/trainA'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/trainA_seg'.format(target_name), exist_ok=True)
@@ -23,6 +24,7 @@ synth_images = synth_images[:train_size_synth]
 
 
 real_images = os.listdir(os.path.join(real_dataset, 'images'))
+random.shuffle(real_images)
 real_images = real_images[:train_size_real+val_size_real]
 
 trainB_images = random.sample(real_images, len(real_images)-val_size_real)
