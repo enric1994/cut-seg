@@ -7,6 +7,10 @@ import util.util as util
 import albumentations as A
 import cv2
 from albumentations.pytorch import ToTensorV2
+from torchvision.datasets.folder import pil_loader
+import numpy as np
+from IPython import embed
+from tqdm import tqdm
 
 
 class UnalignedDataset(BaseDataset):
@@ -43,12 +47,15 @@ class UnalignedDataset(BaseDataset):
         self.A_seg_size = len(self.A_seg_paths)  # get the size of dataset A
         self.B_size = len(self.B_paths)  # get the size of dataset B
 
+
+        self.mean=(0.485, 0.456, 0.406)
+        self.std=(0.229, 0.224, 0.225)
         self.transform = A.Compose([
             A.Resize(286,286),
             A.RandomCrop(width=256, height=256),
             A.HorizontalFlip(p=0.5),
             A.RandomBrightnessContrast(p=0.2),
-            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])
 
@@ -72,13 +79,16 @@ class UnalignedDataset(BaseDataset):
             index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
 
-        A_img = cv2.imread(A_path)
+
+        # A_img = cv2.imread(A_path)
         # A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
+        A_img = np.asarray(pil_loader(A_path)) # PIL loads in RGB, the pixels are between 1 and 255, and after converting it to an array the shape is (h, w, 3)
 
         A_seg_img = cv2.imread(A_seg_path, cv2.IMREAD_GRAYSCALE)//255
 
-        B_img = cv2.imread(B_path)
+        # B_img = cv2.imread(B_path)
         # B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
+        B_img = np.asarray(pil_loader(B_path))
 
 
         # Apply image transformation
@@ -104,4 +114,5 @@ class UnalignedDataset(BaseDataset):
         As we have two datasets with potentially different number of images,
         we take a maximum of
         """
-        return max(self.A_size, self.B_size)
+        return max(self.A_size, self.B_size)       
+        

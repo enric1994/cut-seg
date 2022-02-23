@@ -98,6 +98,7 @@ class CUTModel(BaseModel):
             )
 
         self.netS = self.netS.to(self.gpu_ids[0])
+        self.opt = opt
 
         if self.isTrain:
             self.netD = networks.define_D(opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.normD, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
@@ -243,7 +244,7 @@ class CUTModel(BaseModel):
         self.loss_S = self.criterionSeg(self.segmentation, self.real_A_seg)
 
         # TODO Add segmentation loss
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.opt.S_loss_weight * self.loss_S
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
