@@ -108,6 +108,7 @@ if __name__ == '__main__':
         os.makedirs('/cut/checkpoints/{}/val/epoch_{}'.format(opt.name, epoch), exist_ok=True)
         
         model.netS.eval()
+        model.netG.eval()
         total = 0
         total_iou = 0
         with torch.no_grad():
@@ -115,6 +116,7 @@ if __name__ == '__main__':
             for image, mask in val_dataloader:
                 image = image.to(device)
                 mask = mask.to(device)
+                fake = model.netG(image)
                 pred = model.netS(image)
                 l = iou(pred,mask).item()
                 total_iou+= l
@@ -123,6 +125,9 @@ if __name__ == '__main__':
                 if total < 10:
                     pred_path = '/cut/checkpoints/{}/val/epoch_{}/pred_{}.png'.format(opt.name, epoch, total)
                     save_image(pred[0], pred_path)
+
+                    fake_path = '/cut/checkpoints/{}/val/epoch_{}/fake_{}.png'.format(opt.name, epoch, total)
+                    save_image(fake[0], fake_path)
 
                     image_path = '/cut/checkpoints/{}/val/epoch_{}/image_{}.png'.format(opt.name, epoch, total)
                     # save_image(image[0], image_path)
@@ -135,6 +140,7 @@ if __name__ == '__main__':
                 best_iou = current_iou
             print('Mean IOU:', current_iou)
         model.netS.train()
+        model.netG.eval()
 
 
 # TODO
