@@ -113,10 +113,11 @@ if __name__ == '__main__':
         total_iou = 0
         with torch.no_grad():
 
-            for image, mask in val_dataloader:
+            for synth, image, mask in val_dataloader:
                 image = image.to(device)
                 mask = mask.to(device)
-                fake = model.netG(image)
+                synth = synth.to(device)
+                fake = model.netG(synth)
                 pred = model.netS(image)
                 l = iou(pred,mask).item()
                 total_iou+= l
