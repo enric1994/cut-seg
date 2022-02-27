@@ -48,13 +48,13 @@ class UnalignedDataset(BaseDataset):
         self.B_size = len(self.B_paths)  # get the size of dataset B
 
 
-        self.mean=(0.485, 0.456, 0.406)
-        self.std=(0.229, 0.224, 0.225)
+        self.mean=(0.5,0.5,0.5)
+        self.std=(0.5,0.5,0.5)
         self.transform = A.Compose([
             A.Resize(286,286),
             A.RandomCrop(width=256, height=256),
             A.HorizontalFlip(p=0.5),
-            A.RandomBrightnessContrast(p=0.2),
+            # A.RandomBrightnessContrast(p=0.2),
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])

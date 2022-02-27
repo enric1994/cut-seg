@@ -31,8 +31,8 @@ class TestDataset(Dataset):
         #     # transforms.Normalize((0.5,), (0.5,))
         # ])
 
-        self.mean=(0.485, 0.456, 0.406)
-        self.std=(0.229, 0.224, 0.225)
+        self.mean=(0.5, 0.5, 0.5)
+        self.std= (0.5, 0.5, 0.5)
         self.transform = A.Compose([
             A.Resize(256,256),
             A.Normalize(mean=self.mean, std=self.std),

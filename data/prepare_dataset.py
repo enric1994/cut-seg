@@ -3,13 +3,13 @@ import random
 import shutil
 
 synth_dataset = '/synth-colon'
-real_dataset = '/polyp-data/TestDataset/Kvasir'
+real_dataset = '/polyp-data/TrainDataset'
 # target_name = 'synth_polyp_V11'
-target_name = 'cut_kvasir_50'
-train_size_real = 50
+target_name = 'cut_all_1400-5000'
+train_size_real = 1400
 val_size_real = 50
-train_size_synth = 2000
-val_size_synth = 50
+train_size_synth = 5000
+val_size_synth = val_size_real
 
 os.makedirs('/cut/datasets/{}/trainA'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/valA'.format(target_name), exist_ok=True)

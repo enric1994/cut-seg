@@ -19,8 +19,10 @@ class ValDataset(Dataset):
         self.masks = os.listdir(masks_path)
         self.synth = os.listdir(synth_path)
 
-        self.mean=(0.485, 0.456, 0.406)
-        self.std=(0.229, 0.224, 0.225)
+        # self.mean=(0.485, 0.456, 0.406)
+        # self.std=(0.229, 0.224, 0.225)
+        self.mean=(0.5,0.5,0.5)
+        self.std=(0.5,0.5,0.5)
         # It is not clear which mean and std we should use in validation and test, it seems that netS trains with perfectly normalized images... 
         self.transform = A.Compose([
             A.Resize(256,256),

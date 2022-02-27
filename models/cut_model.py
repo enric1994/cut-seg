@@ -78,7 +78,7 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
         
-        # smp.Unet(
+        # self.netS = smp.Unet(
         #     encoder_name="resnet18",        
         #     encoder_weights="imagenet",     
         #     in_channels=3,                  
@@ -107,7 +107,7 @@ class CUTModel(BaseModel):
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
             self.criterionNCE = []
             # self.criterionSeg = smp.losses.DiceLoss(mode='binary').to(self.device)
-            self.criterionSeg = smp.losses.DiceLoss(mode='binary', log_loss=True, ignore_index=-1)
+            self.criterionSeg = smp.losses.DiceLoss(mode='binary', log_loss=True)
             # torch.nn.BCEWithLogitsLoss()
             # smp.losses.DiceLoss(mode='binary', ignore_index=-1)
 

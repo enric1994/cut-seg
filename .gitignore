@@ -1,4 +1,5 @@
 datasets/
+logs/
 *.log
 *.xml
 *.json
