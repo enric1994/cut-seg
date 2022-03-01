@@ -6,6 +6,7 @@ from .patchnce import PatchNCELoss
 import util.util as util
 import segmentation_models_pytorch as smp
 import torchvision
+from IPython import embed
 
 
 class CUTModel(BaseModel):
@@ -241,10 +242,10 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.loss_S = self.criterionSeg(self.segmentation, self.real_A_seg)
+        self.loss_S = self.opt.S_loss_weight * self.criterionSeg(self.segmentation, self.real_A_seg)
 
         # TODO Add segmentation loss
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.opt.S_loss_weight * self.loss_S
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):

@@ -49,6 +49,10 @@ if __name__ == '__main__':
     optimize_time = 0.1
 
     best_iou = 0.0
+    # val_log_path = os.path.join(opt.checkpoints_dir, opt.name, 'val_log.txt')
+    # with open(val_log_path, "a") as log_file:
+    #     now = time.strftime("%c")
+    #     log_file.write('================ Validation metrics (%s) ================\n' % now)    
 
     times = []
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
@@ -129,6 +133,9 @@ if __name__ == '__main__':
 
                     fake_path = '/cut/checkpoints/{}/val/epoch_{}/fake_{}.png'.format(opt.name, epoch, total)
                     save_image(fake[0], fake_path)
+                    # around epoch 80 val images seem to look reasonable. However, 
+                    # they are not properly printed, maybe we need to use "tensor2im" + 
+                    # "save_image_custom", as done below.
 
                     image_path = '/cut/checkpoints/{}/val/epoch_{}/image_{}.png'.format(opt.name, epoch, total)
                     # save_image(image[0], image_path)
@@ -140,6 +147,8 @@ if __name__ == '__main__':
                 torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, '_best.pth'))
                 best_iou = current_iou
             print('Mean IOU:', current_iou)
+            # with open(val_log_path, "a") as log_file:
+            #     log_file.write('Epoch {}, mean IOU: {}\n'.format(epoch, current_iou))  # save the message
         model.netS.train()
         model.netG.eval()
 
