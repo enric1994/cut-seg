@@ -132,7 +132,7 @@ if __name__ == '__main__':
                     save_image(pred[0], pred_path)
 
                     fake_path = '/cut/checkpoints/{}/val/epoch_{}/fake_{}.png'.format(opt.name, epoch, total)
-                    save_image(fake[0], fake_path)
+                    save_image_custom(tensor2im(fake[0][None]), fake_path)
                     # around epoch 80 val images seem to look reasonable. However, 
                     # they are not properly printed, maybe we need to use "tensor2im" + 
                     # "save_image_custom", as done below.
