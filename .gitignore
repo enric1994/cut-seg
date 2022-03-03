@@ -1,4 +1,6 @@
+wandb/
 datasets/
+.vscode/
 logs/
 *.log
 *.xml

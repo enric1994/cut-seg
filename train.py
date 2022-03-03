@@ -16,6 +16,8 @@ from IPython import embed
 import numpy as np
 from PIL import Image
 
+import wandb
+
 def save_not_normalized_image(image, path, mean, std):
     no_norm_image = image.detach().cpu()*np.asarray(std)[:,None, None] + np.asarray(mean)[:, None, None]
     save_image(no_norm_image, path)
@@ -30,6 +32,14 @@ if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
+
+    wandb.init(
+    notes="Setup wandb",
+    tags=[opt.CUT_mode, opt.dataroot],
+    project="cut-seg"
+    )
+
+    wandb.run.name = opt.name
 
     val_data = ValDataset(opt.dataroot)
     # opt.batch_size
@@ -85,6 +95,14 @@ if __name__ == '__main__':
 
             if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
+                wandb.log({"train_loss_G_GAN": losses['G_GAN'], "epoch": epoch})
+                wandb.log({"train_loss_D_real": losses['D_real'], "epoch": epoch})
+                wandb.log({"train_loss_D_fake": losses['D_fake'], "epoch": epoch})
+                wandb.log({"train_loss_G": losses['G'], "epoch": epoch})
+                wandb.log({"train_loss_NCE": losses['NCE'], "epoch": epoch})
+                wandb.log({"train_loss_S": losses['S'], "epoch": epoch})
+                wandb.log({"train_loss_NCE_Y": losses['NCE_Y'], "epoch": epoch})
+
                 visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
 
             iter_data_time = time.time()
@@ -92,21 +110,30 @@ if __name__ == '__main__':
         model.compute_visuals()
         visuals = model.get_current_visuals()
         os.makedirs('/cut/checkpoints/{}/train/epoch_{}'.format(opt.name, epoch), exist_ok=True)
+        wandb_images = {}
         for image_type in visuals.keys():
+            wandb_images[image_type] = []
             for i, img in enumerate(visuals[image_type]):
                 img_path = '/cut/checkpoints/{}/train/epoch_{}/{}_{}.png'.format(opt.name, epoch, image_type, i)
                 if img.shape[0]==3:
                     if image_type == "fake_B":
                         save_image_custom(tensor2im(img[None]), img_path)
+                        wandb_images[image_type].append(wandb.Image(Image.fromarray(tensor2im(img[None]))))
                     else:
                         save_not_normalized_image(img, img_path, dataset.dataset.mean, dataset.dataset.std)
+
+                        no_norm_image = img.detach().cpu()*np.asarray(dataset.dataset.std)[:,None, None] + np.asarray(dataset.dataset.mean)[:, None, None]
+                        wandb_images[image_type].append(wandb.Image(no_norm_image))
                     # save_image(img, img_path)
                 else:
                     save_image(img.repeat(3,1,1).float(), img_path)
-
+                    wandb_images[image_type].append(wandb.Image(img.repeat(3,1,1).float()))
+        
+            wandb.log({"{}_train_{}".format(str(epoch).zfill(5), image_type): wandb_images[image_type]})
+        
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
-        model.update_learning_rate()                     # update learning rates at the end of every epoch.
-
+        lr = model.update_learning_rate()                     # update learning rates at the end of every epoch.
+        wandb.log({"learning_rate": lr, "epoch": epoch})
     
         # Val dataset
         os.makedirs('/cut/checkpoints/{}/val/epoch_{}'.format(opt.name, epoch), exist_ok=True)
@@ -115,6 +142,9 @@ if __name__ == '__main__':
         model.netG.eval()
         total = 0
         total_iou = 0
+        wandb_images_pred = []
+        wandb_images_fake = []
+        wandb_images_input = []
         with torch.no_grad():
 
             for synth, image, mask in val_dataloader:
@@ -124,15 +154,18 @@ if __name__ == '__main__':
                 fake = model.netG(synth)
                 pred = model.netS(image)
                 l = iou(pred,mask).item()
+                # wandb.log({"val_IOU": l})
                 total_iou+= l
                 total+=1
 
-                if total < 10:
+                if total < 4:
                     pred_path = '/cut/checkpoints/{}/val/epoch_{}/pred_{}.png'.format(opt.name, epoch, total)
                     save_image(pred[0], pred_path)
+                    wandb_images_pred.append(wandb.Image(pred[0].repeat(3,1,1).float()))
 
                     fake_path = '/cut/checkpoints/{}/val/epoch_{}/fake_{}.png'.format(opt.name, epoch, total)
                     save_image_custom(tensor2im(fake[0][None]), fake_path)
+                    wandb_images_fake.append(wandb.Image(Image.fromarray(tensor2im(fake[0][None]))))
                     # around epoch 80 val images seem to look reasonable. However, 
                     # they are not properly printed, maybe we need to use "tensor2im" + 
                     # "save_image_custom", as done below.
@@ -141,10 +174,18 @@ if __name__ == '__main__':
                     # save_image(image[0], image_path)
                     # save_not_normalized_image(image[0], image_path, val_dataloader.dataset.mean, val_dataloader.dataset.std)
                     save_image_custom(tensor2im(image[0][None]), image_path)
+                    wandb_images_input.append(wandb.Image(Image.fromarray(tensor2im(image[0][None]))))
+            
+            wandb.log({"{}_val_pred".format(str(epoch).zfill(5)): wandb_images_pred})
+            wandb.log({"{}_val_fake".format(str(epoch).zfill(5)): wandb_images_fake})
+            wandb.log({"{}_val_input".format(str(epoch).zfill(5)): wandb_images_input})
+
             current_iou = total_iou/total
+            wandb.log({"val_mIOU": current_iou, "epoch": epoch})
             if current_iou >= best_iou:
                 print('Overwrite best model')
                 torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, '_best.pth'))
+                wandb.save(os.path.join('/cut/checkpoints/', opt.name, '_best.pth'))
                 best_iou = current_iou
             print('Mean IOU:', current_iou)
             # with open(val_log_path, "a") as log_file:
