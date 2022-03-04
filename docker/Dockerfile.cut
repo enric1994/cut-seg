@@ -1,0 +1,4 @@
+FROM pytorch/pytorch:1.9.0-cuda10.2-cudnn7-runtime
+
+RUN pip install thop imageio torchstat scipy dominate>=2.4.0 visdom>=0.1.8.8 packaging segmentation-models-pytorch albumentations wandb
+RUN apt update -y && apt install wget unzip -y
