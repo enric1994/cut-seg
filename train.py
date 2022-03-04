@@ -34,12 +34,16 @@ if __name__ == '__main__':
     dataset_size = len(dataset)    # get the number of images in the dataset.
 
     wandb.init(
+    config=opt,
     notes="Setup wandb",
     tags=[opt.CUT_mode, opt.dataroot],
     project="cut-seg"
     )
 
     wandb.run.name = opt.name
+
+    wandb.log(dict(vars(opt)))
+    opt = wandb.config
 
     val_data = ValDataset(opt.dataroot)
     # opt.batch_size
