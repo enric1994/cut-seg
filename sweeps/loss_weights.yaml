@@ -10,13 +10,13 @@ command:
   - --CUT_mode 
   - cut
   - --n_epochs 
-  - 25
+  - 2
   - --n_epochs_decay 
-  - 25
+  - 2
 project: cut-seg
 method: bayes
 metric:
-  name: val_mIOU
+  name: best_val_mIOU
   goal: minimize
 parameters:
   S_loss_weight:

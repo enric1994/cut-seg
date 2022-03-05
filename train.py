@@ -36,13 +36,13 @@ if __name__ == '__main__':
     wandb.init(
     config=opt,
     notes="Setup wandb",
-    tags=[opt.CUT_mode, opt.dataroot],
+    tags=[opt.CUT_mode, opt.dataroot, str(dataset_size), "all"],
     project="cut-seg"
     )
 
-    wandb.run.name = opt.name
+    # wandb.run.name = opt.name
 
-    wandb.log(dict(vars(opt)))
+    # wandb.log(dict(vars(opt)))
     opt = wandb.config
 
     val_data = ValDataset(opt.dataroot)
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # image2tensor = transforms.PILToTensor()
 
     model = create_model(opt)      # create a model given opt.model and other options
-    print('The number of training images = %d' % dataset_size)
+    # print('The number of training images = %d' % dataset_size)
 
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     opt.visualizer = visualizer
@@ -107,10 +107,10 @@ if __name__ == '__main__':
                 wandb.log({"train_loss_S": losses['S'], "epoch": epoch})
                 wandb.log({"train_loss_NCE_Y": losses['NCE_Y'], "epoch": epoch})
 
-                visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
-
+            visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
+                
             iter_data_time = time.time()
-
+        
         model.compute_visuals()
         visuals = model.get_current_visuals()
         os.makedirs('/cut/checkpoints/{}/train/epoch_{}'.format(opt.name, epoch), exist_ok=True)
@@ -191,6 +191,7 @@ if __name__ == '__main__':
                 torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, '_best.pth'))
                 wandb.save(os.path.join('/cut/checkpoints/', opt.name, '_best.pth'))
                 best_iou = current_iou
+                wandb.log({"best_val_mIOU": best_iou, "epoch": epoch})
             print('Mean IOU:', current_iou)
             # with open(val_log_path, "a") as log_file:
             #     log_file.write('Epoch {}, mean IOU: {}\n'.format(epoch, current_iou))  # save the message
