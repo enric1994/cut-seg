@@ -17,7 +17,7 @@ project: cut-seg
 method: bayes
 metric:
   name: best_val_mIOU
-  goal: minimize
+  goal: maximize
 parameters:
   S_loss_weight:
     distribution: uniform

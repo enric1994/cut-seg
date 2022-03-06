@@ -15,6 +15,7 @@ import segmentation_models_pytorch as smp
 from IPython import embed
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
 import wandb
 
@@ -69,7 +70,7 @@ if __name__ == '__main__':
     #     log_file.write('================ Validation metrics (%s) ================\n' % now)    
 
     times = []
-    for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
+    for epoch in tqdm(range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1)):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
         iter_data_time = time.time()    # timer for data loading per iteration
         epoch_iter = 0                  # the number of training iterations in current epoch, reset to 0 every epoch
@@ -106,8 +107,6 @@ if __name__ == '__main__':
                 wandb.log({"train_loss_NCE": losses['NCE'], "epoch": epoch})
                 wandb.log({"train_loss_S": losses['S'], "epoch": epoch})
                 wandb.log({"train_loss_NCE_Y": losses['NCE_Y'], "epoch": epoch})
-
-            visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
                 
             iter_data_time = time.time()
         
