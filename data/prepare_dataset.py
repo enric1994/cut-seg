@@ -5,16 +5,18 @@ import shutil
 synth_dataset = '/synth-colon'
 real_dataset = '/polyp-data/TrainDataset'
 # target_name = 'synth_polyp_V11'
-target_name = 'cut_all_1400-5000'
-train_size_real = 1400
-val_size_real = 50
+target_name = 'cut_all_1200_reversed'
+train_size_real = 1200
+val_size_real = 200
 train_size_synth = 5000
 val_size_synth = val_size_real
 
 os.makedirs('/cut/datasets/{}/trainA'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/valA'.format(target_name), exist_ok=True)
+os.makedirs('/cut/datasets/{}/valA_seg'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/trainA_seg'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/trainB'.format(target_name), exist_ok=True)
+os.makedirs('/cut/datasets/{}/trainB_seg'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/valB'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/valB_seg'.format(target_name), exist_ok=True)
 
@@ -55,12 +57,23 @@ for f in valA_images:
         os.path.join('/cut/datasets',target_name,'valA')
     )
 
+for f in valA_images:
+    shutil.copy(
+        os.path.join(synth_dataset, 'masks', f),
+        os.path.join('/cut/datasets',target_name,'valA_seg')
+    )
 
 
 for f in trainB_images:
     shutil.copy(
         os.path.join(real_dataset, 'images', f),
         os.path.join('/cut/datasets',target_name,'trainB')
+    )
+
+for f in trainB_images:
+    shutil.copy(
+        os.path.join(real_dataset, 'masks', f),
+        os.path.join('/cut/datasets',target_name,'trainB_seg')
     )
 
 for f in valB_images:
