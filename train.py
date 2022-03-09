@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     wandb.init(
     config=opt,
-    tags=[opt.CUT_mode, opt.dataroot, "all", "reversed"],
+    # tags=[opt.CUT_mode, opt.dataroot, "all", "reversed"],
     project="cut-seg"
     )
 
@@ -160,8 +160,8 @@ if __name__ == '__main__':
                     pred = model.netS(fake)
                     l = iou(pred,synth_mask).item()
                 else:
-                    fake = model.netG(image)
-                    pred = model.netS(fake)
+                    fake = model.netG(synth)
+                    pred = model.netS(image)
                     l = iou(pred,mask).item()
                 # wandb.log({"val_IOU": l})
                 total_iou+= l

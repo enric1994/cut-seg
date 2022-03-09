@@ -5,10 +5,10 @@ import shutil
 synth_dataset = '/synth-colon'
 real_dataset = '/polyp-data/TrainDataset'
 # target_name = 'synth_polyp_V11'
-target_name = 'cut_all_1200_reversed'
-train_size_real = 1200
-val_size_real = 200
-train_size_synth = 5000
+target_name = 'cut_kvasir_400r_400s'
+train_size_real = 400
+val_size_real = 100
+train_size_synth = 400
 val_size_synth = val_size_real
 
 os.makedirs('/cut/datasets/{}/trainA'.format(target_name), exist_ok=True)
@@ -31,7 +31,8 @@ valA_images = [x for x in synth_images if x not in trainA_images]
 # valA_images = [x for x in synth_images if x not in trainA_images]
 
 
-real_images = os.listdir(os.path.join(real_dataset, 'images'))
+# real_images = os.listdir(os.path.join(real_dataset, 'images'))
+real_images = [x for x in os.listdir(os.path.join(real_dataset, 'images')) if 'c' in x]
 random.shuffle(real_images)
 real_images = real_images[:train_size_real+val_size_real]
 
