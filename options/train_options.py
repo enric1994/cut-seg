@@ -41,6 +41,9 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
 
         parser.add_argument('--S_loss_weight', type=float, default=1.0, help='weight assigned to the segmentation term in the loss')
+        parser.add_argument('--S_weight_temp', type=str, default="False", help='Set to "True" to apply a temoral weight to the segmentation loss')
+        parser.add_argument('--current_epoch', type=int, default=0, help='Logs the current epoch')
+        parser.add_argument('--weights_encoder', type=str, default=None, help="None: segm. net trained from scratch. 'imagenet': pretrained encoder.")
         parser.add_argument('--reversed', default=False, action='store_true', help='convert B to A and validate it accordingly')
         
 
