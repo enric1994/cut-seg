@@ -72,6 +72,7 @@ if __name__ == '__main__':
         visualizer.reset()              # reset the visualizer: make sure it saves the results to HTML at least once every epoch
 
         dataset.set_epoch(epoch)
+        opt.current_epoch = epoch
         for i, data in enumerate(dataset):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
@@ -166,9 +167,6 @@ if __name__ == '__main__':
                     fake_path = '/cut/checkpoints/{}/val/epoch_{}/fake_{}.png'.format(opt.name, epoch, total)
                     save_image_custom(tensor2im(fake[0][None]), fake_path)
                     wandb_images_fake.append(wandb.Image(Image.fromarray(tensor2im(fake[0][None]))))
-                    # around epoch 80 val images seem to look reasonable. However, 
-                    # they are not properly printed, maybe we need to use "tensor2im" + 
-                    # "save_image_custom", as done below.
 
                     image_path = '/cut/checkpoints/{}/val/epoch_{}/image_{}.png'.format(opt.name, epoch, total)
                     # save_image(image[0], image_path)

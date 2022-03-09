@@ -58,6 +58,17 @@ class UnalignedDataset(BaseDataset):
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])
+        # self.transform = A.Compose([
+        #     A.Resize(286,286),
+        #     A.HorizontalFlip(p=0.5),
+        #     A.ShiftScaleRotate(scale_limit=0.5, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
+        #     A.PadIfNeeded(min_height=256, min_width=256, always_apply=True, border_mode=0),
+        #     A.RandomCrop(width=256, height=256),
+        #     A.Perspective(p=0.5),   
+        #     A.Normalize(mean=self.mean, std=self.std),
+        #     ToTensorV2()
+        # ])
+
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.

@@ -79,24 +79,24 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
         
-        # self.netS = smp.Unet(
-        #     encoder_name="resnet18",        
-        #     encoder_weights="imagenet",     
-        #     in_channels=3,                  
-        #     classes=1,                
-        # )
-        self.netS = smp.MAnet(
-            encoder_name='resnet18',
-            encoder_depth=5, 
-            encoder_weights='imagenet', 
-            decoder_use_batchnorm=True, 
-            decoder_channels=(256, 128, 64, 32, 16), 
-            decoder_pab_channels=64, 
-            in_channels=3, 
-            classes=1, 
-            activation=None, 
-            aux_params=None
-            )
+        self.netS = smp.Unet(
+            encoder_name="resnet18",        
+            encoder_weights=opt.weights_encoder,
+            in_channels=3,                  
+            classes=1,                
+        )
+        # self.netS = smp.MAnet(
+        #     encoder_name='resnet18',
+        #     encoder_depth=5, 
+        #     encoder_weights='imagenet',
+        #     decoder_use_batchnorm=True, 
+        #     decoder_channels=(256, 128, 64, 32, 16), 
+        #     decoder_pab_channels=64, 
+        #     in_channels=3, 
+        #     classes=1, 
+        #     activation=None, 
+        #     aux_params=None
+        #     )
 
         self.netS = self.netS.to(self.gpu_ids[0])
         self.opt = opt
@@ -242,7 +242,12 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        self.loss_S = self.opt.S_loss_weight * self.criterionSeg(self.segmentation, self.real_A_seg)
+        if self.opt.S_weight_temp == "True":
+            S_w = np.linspace(0, self.opt.S_loss_weight, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.opt.current_epoch-1]
+        else:
+            S_w = self.opt.S_loss_weight
+
+        self.loss_S = S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
 
         # TODO Add segmentation loss
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
