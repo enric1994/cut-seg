@@ -1,0 +1,33 @@
+program: train.py
+command:
+  - ${env}
+  - python
+  - ${program}
+  - --dataroot 
+  - ./datasets/cut_all_1400-5000
+  - --name 
+  - sweep_loss_weights
+  - --CUT_mode 
+  - cut
+  - --n_epochs 
+  - 2
+  - --n_epochs_decay 
+  - 2
+project: cut-seg
+method: bayes
+metric:
+  name: best_val_mIOU
+  goal: maximize
+parameters:
+  S_loss_weight:
+    distribution: uniform
+    min: 0.1
+    max: 10
+  lambda_GAN:
+    distribution: uniform
+    min: 0.1
+    max: 10
+  lambda_NCE:
+    distribution: uniform
+    min: 0.1
+    max: 10

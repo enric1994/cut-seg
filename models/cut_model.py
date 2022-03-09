@@ -67,7 +67,7 @@ class CUTModel(BaseModel):
 
         if opt.nce_idt and self.isTrain:
             self.loss_names += ['NCE_Y']
-            self.visual_names += ['idt_B']
+            # self.visual_names += ['idt_B']
 
         if self.isTrain:
             self.model_names = ['G', 'F', 'D', 'S']

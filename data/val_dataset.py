@@ -14,10 +14,12 @@ class ValDataset(Dataset):
         self.root_dir = root_dir
         images_path = os.path.join(root_dir, 'valB')
         masks_path = os.path.join(root_dir, 'valB_seg')
+        synth_masks_path = os.path.join(root_dir, 'valA_seg')
         synth_path = os.path.join(root_dir, 'valA')
         self.images = os.listdir(images_path)
         self.masks = os.listdir(masks_path)
         self.synth = os.listdir(synth_path)
+        self.synth_masks = os.listdir(synth_masks_path)
 
         # self.mean=(0.485, 0.456, 0.406)
         # self.std=(0.229, 0.224, 0.225)
@@ -47,15 +49,19 @@ class ValDataset(Dataset):
         A_img = np.asarray(pil_loader(os.path.join(self.root_dir, 'valA', self.synth[idx])))
 
         B_seg_img = cv2.imread(os.path.join(self.root_dir, 'valB_seg', self.masks[idx]), cv2.IMREAD_GRAYSCALE)//255
+        
+        A_seg_img = cv2.imread(os.path.join(self.root_dir, 'valA_seg', self.synth_masks[idx]), cv2.IMREAD_GRAYSCALE)//255
 
-        A_transformed = self.transform(image=A_img)
+
+        A_transformed = self.transform(image=A_img, mask=A_seg_img)
         A = A_transformed['image']
+        A_seg = A_transformed['mask'][None]
 
         B_transformed = self.transform(image=B_img, mask=B_seg_img)
         B = B_transformed['image']
         B_seg = B_transformed['mask'][None]
         
-        return A, B, B_seg
+        return A, A_seg, B, B_seg
 
 
 

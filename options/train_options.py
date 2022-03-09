@@ -44,6 +44,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--S_weight_temp', type=str, default="False", help='Set to "True" to apply a temoral weight to the segmentation loss')
         parser.add_argument('--current_epoch', type=int, default=0, help='Logs the current epoch')
         parser.add_argument('--weights_encoder', type=str, default=None, help="None: segm. net trained from scratch. 'imagenet': pretrained encoder.")
+        parser.add_argument('--reversed', default=False, action='store_true', help='convert B to A and validate it accordingly')
         
 
         self.isTrain = True
