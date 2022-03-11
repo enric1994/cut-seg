@@ -134,7 +134,9 @@ if __name__ == '__main__':
                     save_image(img.repeat(3,1,1).float(), img_path)
                     wandb_images[image_type].append(wandb.Image(img.repeat(3,1,1).float()))
         
-            wandb.log({"{}_train_{}".format(str(epoch).zfill(5), image_type): wandb_images[image_type]})
+            # wandb.log({"{}_train_{}".format(str(epoch).zfill(5), image_type): wandb_images[image_type]})
+            wandb.log({"{}_{}_train_{}".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5), image_type): wandb_images[image_type]})
+
         
         # print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         lr = model.update_learning_rate()                     # update learning rates at the end of every epoch.
@@ -191,10 +193,15 @@ if __name__ == '__main__':
                     save_image_custom(tensor2im(synth[0][None]), synth_path)
                     wandb_images_synth.append(wandb.Image(Image.fromarray(tensor2im(synth[0][None]))))
             
-            wandb.log({"{}_val_pred".format(str(epoch).zfill(5)): wandb_images_pred})
-            wandb.log({"{}_val_fake".format(str(epoch).zfill(5)): wandb_images_fake})
-            wandb.log({"{}_val_input".format(str(epoch).zfill(5)): wandb_images_input})
-            wandb.log({"{}_val_synth".format(str(epoch).zfill(5)): wandb_images_synth})
+            # wandb.log({"{}_val_pred".format(str(epoch).zfill(5)): wandb_images_pred})
+            # wandb.log({"{}_val_fake".format(str(epoch).zfill(5)): wandb_images_fake})
+            # wandb.log({"{}_val_input".format(str(epoch).zfill(5)): wandb_images_input})
+            # wandb.log({"{}_val_synth".format(str(epoch).zfill(5)): wandb_images_synth})
+
+            wandb.log({"{}_{}_val_pred".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_pred})
+            wandb.log({"{}_{}_val_fake".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_fake})
+            wandb.log({"{}_{}_val_input".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_input})
+            wandb.log({"{}_{}_val_synth".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_synth})            
 
             current_iou = total_iou/total
             wandb.log({"val_mIOU": current_iou, "epoch": epoch})
