@@ -1,4 +1,6 @@
 wandb/
+scene.blend
+scene.blend1
 datasets/
 .vscode/
 logs/
@@ -48,4 +50,3 @@ test/.coverage
 test/data/legacy_serialized.pt
 *~
 .idea
-docker/docker-compose.yml
