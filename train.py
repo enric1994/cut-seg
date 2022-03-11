@@ -76,7 +76,7 @@ if __name__ == '__main__':
         visualizer.reset()              # reset the visualizer: make sure it saves the results to HTML at least once every epoch
 
         dataset.set_epoch(epoch)
-        opt.current_epoch = epoch
+        model.current_epoch = epoch
         for i, data in enumerate(dataset):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:

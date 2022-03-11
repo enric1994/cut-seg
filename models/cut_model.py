@@ -100,6 +100,7 @@ class CUTModel(BaseModel):
 
         self.netS = self.netS.to(self.gpu_ids[0])
         self.opt = opt
+        self.current_epoch = 0
 
         if self.isTrain:
             self.netD = networks.define_D(opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.normD, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
@@ -243,7 +244,7 @@ class CUTModel(BaseModel):
 
         # Compute segmentation loss
         if self.opt.S_weight_temp == "True":
-            S_w = np.linspace(0, self.opt.S_loss_weight, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.opt.current_epoch-1]
+            S_w = np.linspace(0, self.opt.S_loss_weight, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.current_epoch-1]
         else:
             S_w = self.opt.S_loss_weight
 
