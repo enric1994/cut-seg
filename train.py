@@ -47,6 +47,9 @@ if __name__ == '__main__':
     model = create_model(opt)      # create a model given opt.model and other options
     # print('The number of training images = %d' % dataset_size)
 
+    if opt.pretrained_name is not None:
+        model.load_networks(400)
+
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     opt.visualizer = visualizer
     total_iters = 0                # the total number of training iterations
@@ -102,6 +105,7 @@ if __name__ == '__main__':
             iter_data_time = time.time()
         
         model.save_networks(epoch)
+        model.save_networks('latest')
         model.compute_visuals()
         visuals = model.get_current_visuals()
         os.makedirs('/cut/checkpoints/{}/train/epoch_{}'.format(opt.name, epoch), exist_ok=True)

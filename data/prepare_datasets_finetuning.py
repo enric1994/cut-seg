@@ -6,7 +6,6 @@ synth_dataset = '/synth-colon'
 real_dataset = '/polyp-data/TestDataset'
 dataset_names = [x for x in os.listdir(real_dataset) if x[0] != '.']
 train_size_synth = 20000
-val_size_synth = 20
 
 for target_name in dataset_names:
     target_name = 'finetune_' + target_name
@@ -20,12 +19,6 @@ for target_name in dataset_names:
     os.makedirs('/cut/datasets/{}/valB'.format(target_name), exist_ok=True)
     os.makedirs('/cut/datasets/{}/valB_seg'.format(target_name), exist_ok=True)
 
-    synth_images = os.listdir(os.path.join(synth_dataset, 'images'))
-    synth_images = synth_images[:train_size_synth+val_size_synth]
-    random.shuffle(synth_images)
-
-    trainA_images = random.sample(synth_images, len(synth_images)-val_size_synth)
-    valA_images = [x for x in synth_images if x not in trainA_images]
 
     real_images = os.listdir(os.path.join(real_dataset, target_name.split('_')[1], 'images'))
     random.shuffle(real_images)
@@ -33,6 +26,12 @@ for target_name in dataset_names:
     trainB_images = real_images
     valB_images = real_images
 
+    synth_images = os.listdir(os.path.join(synth_dataset, 'images'))
+    # synth_images = synth_images[:train_size_synth+val_size_synth]
+    random.shuffle(synth_images)
+
+    trainA_images = random.sample(synth_images, len(synth_images)-len(trainB_images))
+    valA_images = [x for x in synth_images if x not in trainA_images]
 
     for f in trainA_images:
         shutil.copy(
