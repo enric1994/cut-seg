@@ -5,7 +5,7 @@ from options.train_options import TrainOptions
 from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
-from util.util import tensor2im
+from util.util import tensor2im, save_not_normalized_image, save_image_custom, dice_coef
 from torchvision.utils import save_image
 
 from torchvision import transforms
@@ -18,15 +18,6 @@ from PIL import Image
 from tqdm import tqdm
 
 import wandb
-
-def save_not_normalized_image(image, path, mean, std):
-    no_norm_image = image.detach().cpu()*np.asarray(std)[:,None, None] + np.asarray(mean)[:, None, None]
-    save_image(no_norm_image, path)
-
-def save_image_custom(image_numpy, image_path):
-    # this is directly adapted from the function "save_image" in utils/utils.py
-    image_pil = Image.fromarray(image_numpy)
-    image_pil.save(image_path)    
 
 
 if __name__ == '__main__':
@@ -148,6 +139,7 @@ if __name__ == '__main__':
         model.netG.eval()
         total = 0
         total_iou = 0
+        total_dice = 0
         wandb_images_pred = []
         wandb_images_fake = []
         wandb_images_input = []
@@ -167,8 +159,10 @@ if __name__ == '__main__':
                     fake = model.netG(synth)
                     pred = model.netS(image)
                     l = iou(pred,mask).item()
+                    dice = dice_coef(mask.cpu(),pred.cpu())
                 # wandb.log({"val_IOU": l})
                 total_iou+= l
+                total_dice += dice
                 total+=1
 
                 if total <= 4:
@@ -204,6 +198,8 @@ if __name__ == '__main__':
 
             current_iou = total_iou/total
             wandb.log({"val_mIOU": current_iou, "epoch": epoch})
+            current_dice = total_dice/total
+            wandb.log({"val_mDICE": current_dice, "epoch": epoch})
             if current_iou >= best_iou:
                 # print('Overwrite best model')
                 torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, 'S_best.pth'))

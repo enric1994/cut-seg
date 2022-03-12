@@ -10,6 +10,48 @@ from argparse import Namespace
 import torchvision
 
 
+def save_not_normalized_image(image, path, mean, std):
+    no_norm_image = image.detach().cpu()*np.asarray(std)[:,None, None] + np.asarray(mean)[:, None, None]
+    torchvision.utils.save_image(no_norm_image, path)
+
+def save_image_custom(image_numpy, image_path):
+    # this is directly adapted from the function "save_image" in utils/utils.py
+    image_pil = Image.fromarray(image_numpy)
+    image_pil.save(image_path)    
+
+def dice_coef(true_mask, pred_mask, non_seg_score=1.0):
+    """
+        Computes the Dice coefficient.
+        Args:
+            true_mask : Array of arbitrary shape.
+            pred_mask : Array with the same shape than true_mask.  
+        
+        Returns:
+            A scalar representing the Dice coefficient between the two segmentations. 
+        
+    """
+    assert true_mask.shape == pred_mask.shape
+
+    true_mask[true_mask >= 0.5] = 1
+    true_mask[true_mask < 0.5] = 0
+
+    pred_mask[pred_mask >= 0.5] = 1
+    pred_mask[pred_mask < 0.5] = 0
+
+    true_mask = np.asarray(true_mask).astype(np.bool)
+    pred_mask = np.asarray(pred_mask).astype(np.bool)
+
+    # If both segmentations are all zero, the dice will be 1. (Developer decision)
+    im_sum = true_mask.sum() + pred_mask.sum()
+    if im_sum == 0:
+        return non_seg_score
+
+    # Compute Dice coefficient
+    intersection = np.logical_and(true_mask, pred_mask)
+    return 2. * intersection.sum() / im_sum
+
+
+
 def str2bool(v):
     if isinstance(v, bool):
         return v
