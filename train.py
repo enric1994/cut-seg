@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     val_data = ValDataset(opt.dataroot)
     # opt.batch_size
-    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=opt.num_threads)
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, num_workers=opt.num_threads)
     # dice_loss=smp.losses.DiceLoss(mode='binary', log_loss=True, ignore_index=-1)
     iou = smp.utils.metrics.IoU()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -111,7 +111,6 @@ if __name__ == '__main__':
             iter_data_time = time.time()
         
         model.save_networks(epoch)
-        model.load_networks(epoch)
         model.compute_visuals()
         visuals = model.get_current_visuals()
         os.makedirs('/cut/checkpoints/{}/train/epoch_{}'.format(opt.name, epoch), exist_ok=True)
