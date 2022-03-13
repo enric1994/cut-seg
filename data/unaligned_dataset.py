@@ -12,6 +12,13 @@ import numpy as np
 from IPython import embed
 from tqdm import tqdm
 
+from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw 
+
+import random
+import string
+
 
 class UnalignedDataset(BaseDataset):
     """
@@ -54,21 +61,12 @@ class UnalignedDataset(BaseDataset):
             A.Resize(286,286),
             A.RandomCrop(width=256, height=256),
             A.HorizontalFlip(p=0.5),
-            # A.RandomBrightnessContrast(p=0.2),
+            A.VerticalFlip(p=0.5),
+            A.Rotate(always_apply=False, p=1.0, limit=(-90, 90), interpolation=0, border_mode=0, value=(0, 0, 0), mask_value=None),
+            A.CoarseDropout(always_apply=False, p=1.0, max_holes=3, max_height=59, max_width=60, min_holes=1, min_height=49, min_width=47),
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])
-        # self.transform = A.Compose([
-        #     A.Resize(286,286),
-        #     A.HorizontalFlip(p=0.5),
-        #     A.ShiftScaleRotate(scale_limit=0.5, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
-        #     A.PadIfNeeded(min_height=256, min_width=256, always_apply=True, border_mode=0),
-        #     A.RandomCrop(width=256, height=256),
-        #     A.Perspective(p=0.5),   
-        #     A.Normalize(mean=self.mean, std=self.std),
-        #     ToTensorV2()
-        # ])
-
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.
@@ -91,21 +89,17 @@ class UnalignedDataset(BaseDataset):
         B_path = self.B_paths[index_B]
 
 
-        # A_img = cv2.imread(A_path)
-        # A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
-        A_img = np.asarray(pil_loader(A_path)) # PIL loads in RGB, the pixels are between 1 and 255, and after converting it to an array the shape is (h, w, 3)
+        A_PIL = pil_loader(A_path) # PIL loads in RGB, the pixels are between 1 and 255, and after converting it to an array the shape is (h, w, 3)
+
+        A_img = np.asarray(self.add_random_text(A_PIL))
 
         A_seg_img = cv2.imread(A_seg_path, cv2.IMREAD_GRAYSCALE)//255
 
-        # B_img = cv2.imread(B_path)
-        # B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
-        B_img = np.asarray(pil_loader(B_path))
+        B_PIL = pil_loader(B_path)
+
+        B_img = np.asarray(self.add_random_text(B_PIL))
 
 
-        # Apply image transformation
-        # For FastCUT mode, if in finetuning phase (learning rate is decaying),
-        # do not perform resize-crop data augmentation of CycleGAN.
-#        print('current_epoch', self.current_epoch)
         is_finetuning = self.opt.isTrain and self.current_epoch > self.opt.n_epochs
         modified_opt = util.copyconf(self.opt, load_size=self.opt.crop_size if is_finetuning else self.opt.load_size)
         
@@ -126,4 +120,19 @@ class UnalignedDataset(BaseDataset):
         we take a maximum of
         """
         return max(self.A_size, self.B_size)       
+    
+    def add_random_text(self, image):
+        draw = ImageDraw.Draw(image)
+        random_font_name = random.choice([x for x in os.listdir('/cut/fonts/') if '.ttf' in x])
+        random_color = random.choice([(0,0,0),(255,255,255)])
+
+        for i in range(random.randint(0,5)):
+            random_font_size = random.randint(5, 34)
+            random_font = ImageFont.truetype(os.path.join('/cut', 'fonts', random_font_name), random_font_size)
+            x_pos = random.randint(0, 256)
+            y_pos = random.randint(0, 256)
+            random_length = random.randint(0,16)
+            random_text = ''.join(random.choices(string.ascii_letters + string.digits, k=random_length))
+            draw.text((x_pos, y_pos),random_text,random_color,font=random_font)
         
+        return image
