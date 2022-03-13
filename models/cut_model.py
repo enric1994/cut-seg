@@ -79,24 +79,24 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
         
-        self.netS = smp.Unet(
-            encoder_name="resnet18",        
+        # self.netS = smp.Unet(
+        #     encoder_name="resnet18",        
+        #     encoder_weights=opt.weights_encoder,
+        #     in_channels=3,                  
+        #     classes=1,                
+        # )
+        self.netS = smp.MAnet(
+            encoder_name='resnet18',
+            encoder_depth=5, 
             encoder_weights=opt.weights_encoder,
-            in_channels=3,                  
-            classes=1,                
-        )
-        # self.netS = smp.MAnet(
-        #     encoder_name='resnet18',
-        #     encoder_depth=5, 
-        #     encoder_weights='imagenet',
-        #     decoder_use_batchnorm=True, 
-        #     decoder_channels=(256, 128, 64, 32, 16), 
-        #     decoder_pab_channels=64, 
-        #     in_channels=3, 
-        #     classes=1, 
-        #     activation=None, 
-        #     aux_params=None
-        #     )
+            decoder_use_batchnorm=True, 
+            decoder_channels=(256, 128, 64, 32, 16), 
+            decoder_pab_channels=64, 
+            in_channels=3, 
+            classes=1, 
+            activation=None, 
+            aux_params=None
+            )
 
         self.netS = self.netS.to(self.gpu_ids[0])
         self.opt = opt
@@ -168,11 +168,6 @@ class CUTModel(BaseModel):
         if self.opt.netF == 'mlp_sample':
             self.optimizer_F.step()
         
-        # # TODO update SegModel
-        # self.optimizer_Seg.zero_grad()
-        # self.seg_loss.backward()
-        # self.optimizer_Seg.step()
-
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
         Parameters:
@@ -181,10 +176,7 @@ class CUTModel(BaseModel):
         """
         AtoB = self.opt.direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        # input['A_seg'][:,0][:,None]
-        # self.real_A_seg = torchvision.transforms.functional.rgb_to_grayscale(input['A_seg']).to(self.device) # TODO transform size [4, 3, 256, 256] to [4, 1, 256, 256]
         self.real_A_seg = input['A_seg'].to(self.device)
-        # import pdb;pdb.set_trace()
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
@@ -197,10 +189,7 @@ class CUTModel(BaseModel):
                 self.real = torch.flip(self.real, [3])
 
         self.fake = self.netG(self.real)
-        # TODO forward self.fake to segmentation model
-        # import pdb;pdb.set_trace()
         self.segmentation = self.netS(self.fake[:self.real_A.size(0)])
-        # self.segmentation = self.segModel(self.real_A)
 
         self.fake_B = self.fake[:self.real_A.size(0)]
         if self.opt.nce_idt:
@@ -243,14 +232,13 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
 
         # Compute segmentation loss
-        if self.opt.S_weight_temp == "True":
+        if self.opt.S_weight_temp:
             S_w = np.linspace(0, self.opt.S_loss_weight, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.current_epoch-1]
         else:
             S_w = self.opt.S_loss_weight
 
         self.loss_S = S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
 
-        # TODO Add segmentation loss
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
         return self.loss_G
 

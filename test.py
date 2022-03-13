@@ -33,8 +33,6 @@ for dataset_name in dataset_names:
         for image, mask in test_dataloader:
             image = image.to(device)
             mask = mask.to(device)
-            if 'reversed' in experiment_name:
-                image = generator(image)
             pred = model(image)
             dice = dice_coef(mask.cpu(),pred.cpu())
             l = iou(pred,mask).item()

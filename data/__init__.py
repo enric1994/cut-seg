@@ -73,7 +73,7 @@ class CustomDatasetDataLoader():
         dataset_class = find_dataset_using_name(opt.dataset_mode)
         self.dataset = dataset_class(opt)
         print("dataset [%s] was created" % type(self.dataset).__name__)
-        if self.opt.randomSampler == "True":
+        if self.opt.randomSampler:
             num_train_samples = 20000
             num_samples_per_epoch = 1000
             weights = torch.ones(num_train_samples)

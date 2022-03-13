@@ -33,19 +33,15 @@ if __name__ == '__main__':
 
     wandb.run.name = opt.name
 
-    # wandb.log(dict(vars(opt)))
     opt = wandb.config
 
     val_data = ValDataset(opt.dataroot)
-    # opt.batch_size
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, num_workers=opt.num_threads)
-    # dice_loss=smp.losses.DiceLoss(mode='binary', log_loss=True, ignore_index=-1)
+    
     iou = smp.utils.metrics.IoU()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # image2tensor = transforms.PILToTensor()
 
     model = create_model(opt)      # create a model given opt.model and other options
-    # print('The number of training images = %d' % dataset_size)
 
     if opt.pretrained_name is not None:
         model.load_networks(400)
@@ -56,11 +52,7 @@ if __name__ == '__main__':
 
     optimize_time = 0.1
 
-    best_iou = 0.0
-    # val_log_path = os.path.join(opt.checkpoints_dir, opt.name, 'val_log.txt')
-    # with open(val_log_path, "a") as log_file:
-    #     now = time.strftime("%c")
-    #     log_file.write('================ Validation metrics (%s) ================\n' % now)    
+    best_dice = 0.0
 
     times = []
     for epoch in tqdm(range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1)):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
@@ -123,16 +115,13 @@ if __name__ == '__main__':
 
                         no_norm_image = img.detach().cpu()*np.asarray(dataset.dataset.std)[:,None, None] + np.asarray(dataset.dataset.mean)[:, None, None]
                         wandb_images[image_type].append(wandb.Image(no_norm_image))
-                    # save_image(img, img_path)
                 else:
                     save_image(img.repeat(3,1,1).float(), img_path)
                     wandb_images[image_type].append(wandb.Image(img.repeat(3,1,1).float()))
         
-            # wandb.log({"{}_train_{}".format(str(epoch).zfill(5), image_type): wandb_images[image_type]})
             wandb.log({"{}_{}_train_{}".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5), image_type): wandb_images[image_type]})
 
         
-        # print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         lr = model.update_learning_rate()                     # update learning rates at the end of every epoch.
         wandb.log({"learning_rate": lr, "epoch": epoch})
     
@@ -155,16 +144,13 @@ if __name__ == '__main__':
                 mask = mask.to(device)
                 synth = synth.to(device)
                 synth_mask = synth_mask.to(device)
-                if opt.reversed:
-                    fake = model.netG(synth)
-                    pred = model.netS(fake)
-                    l = iou(pred,synth_mask).item()
-                else:
-                    fake = model.netG(synth)
-                    pred = model.netS(image)
-                    l = iou(pred,mask).item()
-                    dice = dice_coef(mask.cpu(),pred.cpu())
-                # wandb.log({"val_IOU": l})
+
+                fake = model.netG(synth)
+                pred = model.netS(image)
+
+                l = iou(pred,mask).item()
+                dice = dice_coef(mask.cpu(),pred.cpu())
+                
                 total_iou+= l
                 total_dice += dice
                 total+=1
@@ -179,22 +165,13 @@ if __name__ == '__main__':
                     wandb_images_fake.append(wandb.Image(Image.fromarray(tensor2im(fake[0][None]))))
 
                     image_path = '/cut/checkpoints/{}/val/epoch_{}/image_{}.png'.format(opt.name, epoch, total)
-                    # save_image(image[0], image_path)
-                    # save_not_normalized_image(image[0], image_path, val_dataloader.dataset.mean, val_dataloader.dataset.std)
                     save_image_custom(tensor2im(image[0][None]), image_path)
                     wandb_images_input.append(wandb.Image(Image.fromarray(tensor2im(image[0][None]))))
 
                     synth_path = '/cut/checkpoints/{}/val/epoch_{}/synth_{}.png'.format(opt.name, epoch, total)
-                    # save_image(image[0], image_path)
-                    # save_not_normalized_image(image[0], image_path, val_dataloader.dataset.mean, val_dataloader.dataset.std)
                     save_image_custom(tensor2im(synth[0][None]), synth_path)
                     wandb_images_synth.append(wandb.Image(Image.fromarray(tensor2im(synth[0][None]))))
             
-            # wandb.log({"{}_val_pred".format(str(epoch).zfill(5)): wandb_images_pred})
-            # wandb.log({"{}_val_fake".format(str(epoch).zfill(5)): wandb_images_fake})
-            # wandb.log({"{}_val_input".format(str(epoch).zfill(5)): wandb_images_input})
-            # wandb.log({"{}_val_synth".format(str(epoch).zfill(5)): wandb_images_synth})
-
             wandb.log({"{}_{}_val_pred".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_pred})
             wandb.log({"{}_{}_val_fake".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_fake})
             wandb.log({"{}_{}_val_input".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_input})
@@ -204,31 +181,12 @@ if __name__ == '__main__':
             wandb.log({"val_mIOU": current_iou, "epoch": epoch})
             current_dice = total_dice/total
             wandb.log({"val_mDICE": current_dice, "epoch": epoch})
-            if current_iou >= best_iou:
-                # print('Overwrite best model')
+            if current_dice >= best_dice:
                 torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, 'S_best.pth'))
                 wandb.save(os.path.join('/cut/checkpoints/', opt.name, 'S_best.pth'), base_path='/cut')
 
-                if opt.reversed:
-                    torch.save(model.netG.state_dict(), os.path.join('/cut/checkpoints/', opt.name, 'G_best.pth'))
-                    wandb.save(os.path.join('/cut/checkpoints/', opt.name, 'G_best.pth'), base_path='/cut')
-
-                best_iou = current_iou
-                wandb.log({"best_val_mIOU": best_iou, "epoch": epoch})
-            # print('Mean IOU:', current_iou)
-            # with open(val_log_path, "a") as log_file:
-            #     log_file.write('Epoch {}, mean IOU: {}\n'.format(epoch, current_iou))  # save the message
+                best_dice = current_dice
+                wandb.log({"best_val_mDICE": best_dice, "epoch": epoch})
+        
         model.netS.train()
         model.netG.train()
-
-
-# TODO
-# fix channels albumentations
-# apply to validation
-# check if red images
-
-# save GAN image in val
-
-# data augemantation in synth or fake_real?
-
-# print the train IoU (even if not used as a loss)
