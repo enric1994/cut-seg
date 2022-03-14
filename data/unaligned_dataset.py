@@ -41,6 +41,7 @@ class UnalignedDataset(BaseDataset):
         self.dir_A = os.path.join(opt.dataroot, opt.phase + 'A')  # create a path '/path/to/data/trainA'
         self.dir_A_seg = os.path.join(opt.dataroot, opt.phase + 'A_seg')  # create a path '/path/to/data/trainA'
         self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')  # create a path '/path/to/data/trainB'
+        self.dir_B_seg = os.path.join(opt.dataroot, opt.phase + 'B_seg')  # create a path '/path/to/data/trainB'
 
         if opt.phase == "test" and not os.path.exists(self.dir_A) \
            and os.path.exists(os.path.join(opt.dataroot, "valA")):
@@ -50,6 +51,7 @@ class UnalignedDataset(BaseDataset):
         self.A_paths = sorted(make_dataset(self.dir_A, opt.max_dataset_size))   # load images from '/path/to/data/trainA'
         self.A_seg_paths = sorted(make_dataset(self.dir_A_seg, opt.max_dataset_size))   # load images from '/path/to/data/trainA_seg'
         self.B_paths = sorted(make_dataset(self.dir_B, opt.max_dataset_size))    # load images from '/path/to/data/trainB'
+        self.B_seg_paths = sorted(make_dataset(self.dir_B_seg, opt.max_dataset_size))    # load images from '/path/to/data/trainB'
         self.A_size = len(self.A_paths)  # get the size of dataset A
         self.A_seg_size = len(self.A_seg_paths)  # get the size of dataset A
         self.B_size = len(self.B_paths)  # get the size of dataset B
@@ -87,6 +89,7 @@ class UnalignedDataset(BaseDataset):
         else:   # randomize the index for domain B to avoid fixed pairs.
             index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
+        B_seg_path = self.B_seg_paths[index_B]  # make sure index is within then range
 
 
         A_PIL = pil_loader(A_path) # PIL loads in RGB, the pixels are between 1 and 255, and after converting it to an array the shape is (h, w, 3)
@@ -99,6 +102,8 @@ class UnalignedDataset(BaseDataset):
 
         B_img = np.asarray(self.add_random_text(B_PIL))
 
+        B_seg_img = cv2.imread(B_seg_path, cv2.IMREAD_GRAYSCALE)//255
+
 
         is_finetuning = self.opt.isTrain and self.current_epoch > self.opt.n_epochs
         modified_opt = util.copyconf(self.opt, load_size=self.opt.crop_size if is_finetuning else self.opt.load_size)
@@ -108,10 +113,11 @@ class UnalignedDataset(BaseDataset):
         A = A_transformed['image']
         A_seg = A_transformed['mask'][None]
 
-        B_transformed = self.transform(image=B_img)
+        B_transformed = self.transform(image=B_img, mask=B_seg_img)
         B = B_transformed['image']
+        B_seg = B_transformed['mask'][None]
 
-        return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path}
+        return {'A': A, 'A_seg': A_seg, 'B': B, 'B_seg': B_seg, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.

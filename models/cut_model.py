@@ -179,6 +179,7 @@ class CUTModel(BaseModel):
         self.real_A_seg = input['A_seg'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        self.real_B_seg = input['B_seg'].to(self.device)
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
@@ -189,7 +190,8 @@ class CUTModel(BaseModel):
                 self.real = torch.flip(self.real, [3])
 
         self.fake = self.netG(self.real)
-        self.segmentation = self.netS(self.fake[:self.real_A.size(0)])
+        # self.segmentation = self.netS(self.fake[:self.real_A.size(0)])
+        self.segmentation = self.netS(self.real[self.real_B.size(0):])
 
         self.fake_B = self.fake[:self.real_A.size(0)]
         if self.opt.nce_idt:
@@ -237,7 +239,8 @@ class CUTModel(BaseModel):
         else:
             S_w = self.opt.S_loss_weight
 
-        self.loss_S = S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
+        # self.loss_S = S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
+        self.loss_S = S_w * self.criterionSeg(self.segmentation, self.real_B_seg)
 
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
         return self.loss_G
