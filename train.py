@@ -44,7 +44,11 @@ if __name__ == '__main__':
     model = create_model(opt)      # create a model given opt.model and other options
 
     if opt.pretrained_name is not None:
-        model.load_networks(400)
+        # if we put opt.continue_train to True this is done in the model.setup of the first epoch
+        for i, data in enumerate(dataset):
+            break
+        model.data_dependent_initialize(data) # this creates the mlp in netF
+        model.load_networks('latest')
 
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     opt.visualizer = visualizer
