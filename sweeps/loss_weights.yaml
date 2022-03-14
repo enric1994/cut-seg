@@ -4,30 +4,40 @@ command:
   - python
   - ${program}
   - --dataroot 
-  - ./datasets/cut_all_1400-5000
+  - ./datasets/finetune_Kvasir
+  - --pretrained_name
+  - base_Unet.2
   - --name 
-  - sweep_loss_weights
-  - --CUT_mode 
-  - cut
-  - --n_epochs 
-  - 2
-  - --n_epochs_decay 
-  - 2
+  - sweep_lr_lambdas
+
 project: cut-seg
 method: bayes
 metric:
-  name: best_val_mIOU
+  name: best_val_mDICE
   goal: maximize
 parameters:
+# math.log(0.001) = -6.9
   S_loss_weight:
-    distribution: uniform
-    min: 0.1
-    max: 10
+    distribution: log_uniform
+    min: -6.9
+    max: 0
   lambda_GAN:
-    distribution: uniform
-    min: 0.1
-    max: 10
+    distribution: log_uniform
+    min: -6.9
+    max: 0
   lambda_NCE:
-    distribution: uniform
-    min: 0.1
-    max: 10
+    distribution: log_uniform
+    min: -6.9
+    max: 0
+  lr:
+    distribution: log_uniform
+    min: -11.5
+    max: -6.9
+
+
+early_terminate:
+  type: hyperband
+  s: 2
+  eta: 3
+  max_iter: 10
+  max_iter: 30

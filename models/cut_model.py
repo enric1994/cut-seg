@@ -79,24 +79,24 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
         
-        # self.netS = smp.Unet(
-        #     encoder_name="resnet18",        
-        #     encoder_weights=opt.weights_encoder,
-        #     in_channels=3,                  
-        #     classes=1,                
-        # )
-        self.netS = smp.MAnet(
-            encoder_name='resnet18',
-            encoder_depth=5, 
+        self.netS = smp.Unet(
+            encoder_name="resnet18",        
             encoder_weights=opt.weights_encoder,
-            decoder_use_batchnorm=True, 
-            decoder_channels=(256, 128, 64, 32, 16), 
-            decoder_pab_channels=64, 
-            in_channels=3, 
-            classes=1, 
-            activation=None, 
-            aux_params=None
-            )
+            in_channels=3,                  
+            classes=1,                
+        )
+        # self.netS = smp.MAnet(
+        #     encoder_name='resnet18',
+        #     encoder_depth=5, 
+        #     encoder_weights=opt.weights_encoder,
+        #     decoder_use_batchnorm=True, 
+        #     decoder_channels=(256, 128, 64, 32, 16), 
+        #     decoder_pab_channels=64, 
+        #     in_channels=3, 
+        #     classes=1, 
+        #     activation=None, 
+        #     aux_params=None
+        #     )
 
         self.netS = self.netS.to(self.gpu_ids[0])
         self.opt = opt
