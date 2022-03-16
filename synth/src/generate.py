@@ -2,11 +2,13 @@ import argparse
 import bpy
 import random
 import blender_utils as utils
-from dtd_utils import get_random_texture, get_random_polyp, plain_color
+utils.mute()
 import os
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
+# python generate.py --name synth-colonV2 --size 10000
 
 def gen(dataset_version, TOTAL_IMAGES):
     # Make colon
@@ -31,12 +33,12 @@ def gen(dataset_version, TOTAL_IMAGES):
 
 
 
-    for image_number in range(0,TOTAL_IMAGES):
+    for image_number in tqdm(range(0,TOTAL_IMAGES)):
         utils.load_project('/blender/synth/base.blend')
         bpy.ops.curve.primitive_bezier_circle_add()
         b = bpy.data.objects['BezierCircle']
-        b.scale[0] = 4
-        b.scale[1] = 4
+        b.scale[0] = 4.5
+        b.scale[1] = 4.5
 
         cu = bpy.data.curves.new("MyCurveData", "CURVE")
         ob = bpy.data.objects.new("MyCurveObject", cu)
@@ -64,7 +66,8 @@ def gen(dataset_version, TOTAL_IMAGES):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action = 'SELECT')
 
-        bpy.ops.transform.vertex_random(offset=random.uniform(0,0.15), uniform=0.0, normal=0.0, seed=0)
+        deformation = random.uniform(0,0.15)
+        bpy.ops.transform.vertex_random(offset=deformation, uniform=0.0, normal=0.0, seed=0)
         bpy.ops.mesh.vertices_smooth()
         bpy.ops.mesh.vertices_smooth()
         bpy.ops.mesh.vertices_smooth()
@@ -72,9 +75,9 @@ def gen(dataset_version, TOTAL_IMAGES):
 
         #Create material
         mat = bpy.data.materials.new(name="Material")
-        random_shade_1 = random.uniform(0.6,1.2)
-        random_shade_2 = random.uniform(0.6,1.2)
-        random_shade_3 = random.uniform(0.6,1.2)
+        random_shade_1 = random.uniform(0.8,1.2)
+        random_shade_2 = random.uniform(0.8,1.2)
+        random_shade_3 = random.uniform(0.8,1.2)
         mat.diffuse_color=[0.800000 * random_shade_1, 0.18 * random_shade_2, 0.13 * random_shade_3]
 
         # tex = bpy.data.textures.new("SomeName", 'IMAGE')
@@ -112,7 +115,8 @@ def gen(dataset_version, TOTAL_IMAGES):
             bpy.data.objects[object_name].location[1] = random.uniform(-1, 1)
             bpy.data.objects[object_name].location[2] = random.uniform(-1, 1)
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.vertex_random(offset=random.uniform(0,0.05), uniform=0.0, normal=0.0, seed=0)
+            bpy.ops.transform.vertex_random(offset=deformation, uniform=0.0, normal=0.0, seed=0)
+            bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
@@ -120,11 +124,11 @@ def gen(dataset_version, TOTAL_IMAGES):
             bpy.ops.object.mode_set(mode='OBJECT')
 
             #Create material
-            mat = bpy.data.materials.new(name="Material." + str(i))
-            random_shade_1 = random.uniform(0.6,1.2)
-            random_shade_2 = random.uniform(0.6,1.2)
-            random_shade_3 = random.uniform(0.6,1.2)
-            mat.diffuse_color=[0.800000 * random_shade_1, 0.18 * random_shade_2, 0.13 * random_shade_3]
+            # mat = bpy.data.materials.new(name="Material." + str(i))
+            # random_shade_1 = random.uniform(0.6,1.2)
+            # random_shade_2 = random.uniform(0.6,1.2)
+            # random_shade_3 = random.uniform(0.6,1.2)
+            # mat.diffuse_color=[0.800000 * random_shade_1, 0.18 * random_shade_2, 0.13 * random_shade_3]
 
             # tex = bpy.data.textures.new("SomeName." + str(i), 'IMAGE')
             # img = bpy.data.images.load(filepath=plain_color('polyp'))
@@ -289,6 +293,7 @@ def gen(dataset_version, TOTAL_IMAGES):
         # Reset
         bpy.ops.wm.read_factory_settings(use_empty=True)
 
+        # utils.unmute(desc)
 
 
     def remove_empty_masks(dataset_name):
@@ -318,7 +323,7 @@ def gen(dataset_version, TOTAL_IMAGES):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', type=str, default="test", help='Dataset name')
-parser.add_argument('--size', type=int, default=10, help='Dataset size')
+parser.add_argument('--size', type=int, default=20, help='Dataset size')
 args = parser.parse_args()
 
 gen(args.name, args.size)
