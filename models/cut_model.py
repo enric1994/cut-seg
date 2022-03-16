@@ -62,7 +62,7 @@ class CUTModel(BaseModel):
         # specify the training losses you want to print out.
         # The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE', 'S']
-        self.visual_names = ['real_A', 'real_A_seg', 'segmentation', 'fake_B', 'real_B']
+        self.visual_names = ['real_A', 'real_A_seg', 'segmentation', 'fake_B']
         self.nce_layers = [int(i) for i in self.opt.nce_layers.split(',')]
 
         if opt.nce_idt and self.isTrain:

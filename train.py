@@ -138,6 +138,7 @@ if __name__ == '__main__':
         total_iou = 0
         total_dice = 0
         wandb_images_pred = []
+        wandb_images_mask = []
         wandb_images_fake = []
         wandb_images_input = []
         wandb_images_synth = []
@@ -164,6 +165,10 @@ if __name__ == '__main__':
                     save_image(pred[0], pred_path)
                     wandb_images_pred.append(wandb.Image(pred[0].repeat(3,1,1).float()))
 
+                    mask_path = '/cut/checkpoints/{}/val/epoch_{}/mask_{}.png'.format(opt.name, epoch, total)
+                    save_image(mask[0].float(), mask_path)
+                    wandb_images_mask.append(wandb.Image(mask[0].repeat(3,1,1).float()))
+
                     fake_path = '/cut/checkpoints/{}/val/epoch_{}/fake_{}.png'.format(opt.name, epoch, total)
                     save_image_custom(tensor2im(fake[0][None]), fake_path)
                     wandb_images_fake.append(wandb.Image(Image.fromarray(tensor2im(fake[0][None]))))
@@ -177,6 +182,7 @@ if __name__ == '__main__':
                     wandb_images_synth.append(wandb.Image(Image.fromarray(tensor2im(synth[0][None]))))
             
             wandb.log({"{}_{}_val_pred".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_pred})
+            wandb.log({"{}_{}_val_mask".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_mask})
             wandb.log({"{}_{}_val_fake".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_fake})
             wandb.log({"{}_{}_val_input".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_input})
             wandb.log({"{}_{}_val_synth".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_synth})            
