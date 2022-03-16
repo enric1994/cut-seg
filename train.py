@@ -136,6 +136,7 @@ if __name__ == '__main__':
         model.netG.eval()
         total = 0
         total_iou = 0
+        total_fake_dice = 0
         total_dice = 0
         wandb_images_pred = []
         wandb_images_mask = []
@@ -151,13 +152,16 @@ if __name__ == '__main__':
                 synth_mask = synth_mask.to(device)
 
                 fake = model.netG(synth)
+                fake_pred = model.netS(fake)
                 pred = model.netS(image)
 
                 l = iou(pred,mask).item()
                 dice = dice_coef(mask.cpu(),pred.cpu())
+                fake_dice = dice_coef(synth_mask.cpu(),fake_pred.cpu())
                 
                 total_iou+= l
                 total_dice += dice
+                total_fake_dice += fake_dice
                 total+=1
 
                 if total <= 4:
@@ -191,6 +195,8 @@ if __name__ == '__main__':
             wandb.log({"val_mIOU": current_iou, "epoch": epoch})
             current_dice = total_dice/total
             wandb.log({"val_mDICE": current_dice, "epoch": epoch})
+            current_fake_dice = total_fake_dice/total
+            wandb.log({"val_fake_mDICE": current_fake_dice, "epoch": epoch})
             if current_dice >= best_dice:
                 torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, 'S_best.pth'))
                 wandb.save(os.path.join('/cut/checkpoints/', opt.name, 'S_best.pth'), base_path='/cut')
