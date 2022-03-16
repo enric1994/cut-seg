@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-# python generate.py --name synth-colonV2 --size 10000
+# python generate.py --name synth-colonV2 --size 5000
 
 def gen(dataset_version, TOTAL_IMAGES):
     # Make colon
@@ -52,7 +52,7 @@ def gen(dataset_version, TOTAL_IMAGES):
         cu.bevel_object = bpy.data.objects["BezierCircle"]
         cu.taper_object = bpy.data.objects["BezierCircle"]
 
-        max_rand = 0.4
+        max_rand = 0.8
         long_interval = .5
 
         pts = [(0, 0, 0, 1), (1 *  long_interval, random.uniform(-max_rand,max_rand),random.uniform(-max_rand, max_rand), 1), (2 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (3 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (4 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (5 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (6 * long_interval, 0, 0, 1), (7 * long_interval, 0, 0, 1)]
@@ -95,9 +95,12 @@ def gen(dataset_version, TOTAL_IMAGES):
         # Apply material
         bpy.data.objects['MyCurveObject'].data.materials.append(mat)
 
-
-        num_polyps = 1
-
+        base_location_x = random.uniform(2, 2.3)
+        base_location_y = random.uniform(-1, 1)
+        base_location_z = random.uniform(-1, 1)
+        
+        num_polyps = random.randint(1,8)
+        
         # Make polyps
         for i in range(0,num_polyps):
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -111,16 +114,17 @@ def gen(dataset_version, TOTAL_IMAGES):
             bpy.data.objects[object_name].scale[1] = random.uniform(0.1, 0.5)
             bpy.data.objects[object_name].scale[2] = random.uniform(0.1, 0.5)
 
-            bpy.data.objects[object_name].location[0] = random.uniform(2, 2.3)
-            bpy.data.objects[object_name].location[1] = random.uniform(-1, 1)
-            bpy.data.objects[object_name].location[2] = random.uniform(-1, 1)
+            bpy.data.objects[object_name].location[0] = base_location_x + random.uniform(-0.2, 0.2)
+            bpy.data.objects[object_name].location[1] = base_location_y + random.uniform(-0.2, 0.2)
+            bpy.data.objects[object_name].location[2] = base_location_z + random.uniform(-0.2, 0.2)
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.vertex_random(offset=deformation, uniform=0.0, normal=0.0, seed=0)
+            bpy.ops.transform.vertex_random(offset=deformation/2, uniform=0.0, normal=0.0, seed=0)
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
-            bpy.ops.mesh.vertices_smooth()
+            # bpy.ops.mesh.vertices_smooth()
+            # bpy.ops.mesh.vertices_smooth()
             bpy.ops.object.mode_set(mode='OBJECT')
 
             #Create material
@@ -311,7 +315,7 @@ def gen(dataset_version, TOTAL_IMAGES):
             im=np.asarray(img)
             polyp_pixels = np.count_nonzero(im)
 
-            if polyp_pixels < 20000:
+            if polyp_pixels < 10000:
                 os.remove(clean_dir + image)
                 os.remove(images_dir + image)
 
