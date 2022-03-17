@@ -8,6 +8,7 @@ import segmentation_models_pytorch as smp
 import torchvision
 from IPython import embed
 
+from .harDMSEG import HarDMSEG
 
 class CUTModel(BaseModel):
     """ This class implements CUT and FastCUT model, described in the paper
@@ -78,25 +79,35 @@ class CUTModel(BaseModel):
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, opt.no_antialias_up, self.gpu_ids, opt)
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
-        
-        # self.netS = smp.Unet(
-        #     encoder_name="resnet18",        
-        #     encoder_weights=opt.weights_encoder,
-        #     in_channels=3,                  
-        #     classes=1,                
-        # )
-        self.netS = smp.MAnet(
-            encoder_name='resnet18',
-            encoder_depth=5, 
-            encoder_weights=opt.weights_encoder,
-            decoder_use_batchnorm=True, 
-            decoder_channels=(256, 128, 64, 32, 16), 
-            decoder_pab_channels=64, 
-            in_channels=3, 
-            classes=1, 
-            activation=None, 
-            aux_params=None
+        if "unet18" in self.opt.name:
+            self.netS = smp.Unet(
+                encoder_name="resnet18",        
+                encoder_weights=opt.weights_encoder,
+                in_channels=3,                  
+                classes=1,                
             )
+        if "unet34" in self.opt.name:
+            self.netS = smp.Unet(
+                encoder_name="resnet34",        
+                encoder_weights=opt.weights_encoder,
+                in_channels=3,                  
+                classes=1,                
+            )
+        if "hardmseg" in self.opt.name:
+            self.netS = HarDMSEG()
+            
+        # self.netS = smp.MAnet(
+        #     encoder_name='resnet18',
+        #     encoder_depth=5, 
+        #     encoder_weights=opt.weights_encoder,
+        #     decoder_use_batchnorm=True, 
+        #     decoder_channels=(256, 128, 64, 32, 16), 
+        #     decoder_pab_channels=64, 
+        #     in_channels=3, 
+        #     classes=1, 
+        #     activation=None, 
+        #     aux_params=None
+        #     )
 
         self.netS = self.netS.to(self.gpu_ids[0])
         self.opt = opt
