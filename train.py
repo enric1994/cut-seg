@@ -137,8 +137,10 @@ if __name__ == '__main__':
         model.netG.eval()
         total = 0
         total_iou = 0
+        total_fake_dice = 0
         total_dice = 0
         wandb_images_pred = []
+        wandb_images_mask = []
         wandb_images_fake = []
         wandb_images_input = []
         wandb_images_synth = []
@@ -151,19 +153,26 @@ if __name__ == '__main__':
                 synth_mask = synth_mask.to(device)
 
                 fake = model.netG(synth)
+                fake_pred = model.netS(fake)
                 pred = model.netS(image)
 
                 l = iou(pred,mask).item()
                 dice = dice_coef(mask.cpu(),pred.cpu())
+                fake_dice = dice_coef(synth_mask.cpu(),fake_pred.cpu())
                 
                 total_iou+= l
                 total_dice += dice
+                total_fake_dice += fake_dice
                 total+=1
 
                 if total <= 4:
                     pred_path = '/cut/checkpoints/{}/val/epoch_{}/pred_{}.png'.format(opt.name, epoch, total)
                     save_image(pred[0], pred_path)
                     wandb_images_pred.append(wandb.Image(pred[0].repeat(3,1,1).float()))
+
+                    mask_path = '/cut/checkpoints/{}/val/epoch_{}/mask_{}.png'.format(opt.name, epoch, total)
+                    save_image(mask[0].float(), mask_path)
+                    wandb_images_mask.append(wandb.Image(mask[0].repeat(3,1,1).float()))
 
                     fake_path = '/cut/checkpoints/{}/val/epoch_{}/fake_{}.png'.format(opt.name, epoch, total)
                     save_image_custom(tensor2im(fake[0][None]), fake_path)
@@ -178,6 +187,7 @@ if __name__ == '__main__':
                     wandb_images_synth.append(wandb.Image(Image.fromarray(tensor2im(synth[0][None]))))
             
             wandb.log({"{}_{}_val_pred".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_pred})
+            wandb.log({"{}_{}_val_mask".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_mask})
             wandb.log({"{}_{}_val_fake".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_fake})
             wandb.log({"{}_{}_val_input".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_input})
             wandb.log({"{}_{}_val_synth".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5)): wandb_images_synth})            
@@ -186,6 +196,8 @@ if __name__ == '__main__':
             wandb.log({"val_mIOU": current_iou, "epoch": epoch})
             current_dice = total_dice/total
             wandb.log({"val_mDICE": current_dice, "epoch": epoch})
+            current_fake_dice = total_fake_dice/total
+            wandb.log({"val_fake_mDICE": current_fake_dice, "epoch": epoch})
             if current_dice >= best_dice:
                 torch.save(model.netS, os.path.join('/cut/checkpoints/', opt.name, 'S_best.pth'))
                 wandb.save(os.path.join('/cut/checkpoints/', opt.name, 'S_best.pth'), base_path='/cut')

@@ -8,7 +8,6 @@ import sys
 from mathutils import Euler
 # import imageio
 # from imgaug import augmenters as iaa
-from dtd_utils import get_random_texture
 import shutil
 import math
 

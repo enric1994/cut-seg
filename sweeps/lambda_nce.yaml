@@ -8,11 +8,13 @@ command:
   - --pretrained_name
   - base_Unet.2
   - --name 
-  - sweep_lr_lambdas
+  - sweep_lambda_nce
   - --n_epochs
   - 10
   - --n_epochs_decay
   - 10
+  - --lr
+  - 0.0001
 
 project: cut-seg
 method: bayes
@@ -21,20 +23,9 @@ metric:
   goal: maximize
 parameters:
 # math.log(0.001) = -6.9
-  S_loss_weight:
-    distribution: log_uniform
-    min: -6.9
-    max: 0
-  lambda_GAN:
-    distribution: log_uniform
-    min: -6.9
-    max: 0
+# math.log(0.1) = -2.3
+# math.log(10) = 2.3
   lambda_NCE:
     distribution: log_uniform
-    min: -6.9
-    max: 0
-  lr:
-    distribution: log_uniform
-    min: -11.5
-    max: -6.9
-    
+    min: -2.3
+    max: 2.3

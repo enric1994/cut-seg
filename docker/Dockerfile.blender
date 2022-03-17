@@ -61,4 +61,5 @@ RUN python get-pip.py
 
 RUN pip3 install \
 imutils \
-pillow
+pillow \
+tqdm

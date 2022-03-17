@@ -2,10 +2,9 @@ import os
 import random
 import shutil
 
-synth_dataset = '/synth-colon'
+synth_dataset = '/cut/datasets/synth-colonV2'
 real_dataset = '/polyp-data/TestDataset'
 dataset_names = [x for x in os.listdir(real_dataset) if x[0] != '.']
-train_size_synth = 20000
 
 for target_name in dataset_names:
     target_name = 'finetune_' + target_name
@@ -27,7 +26,6 @@ for target_name in dataset_names:
     valB_images = real_images
 
     synth_images = os.listdir(os.path.join(synth_dataset, 'images'))
-    # synth_images = synth_images[:train_size_synth+val_size_synth]
     random.shuffle(synth_images)
 
     trainA_images = random.sample(synth_images, len(synth_images)-len(trainB_images))

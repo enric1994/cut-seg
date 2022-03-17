@@ -2,13 +2,11 @@ import os
 import random
 import shutil
 
-synth_dataset = '/synth-colon'
+synth_dataset = '/cut/datasets/synth-colonV2'
 real_dataset = '/polyp-data/TrainDataset'
-# target_name = 'synth_polyp_V11'
-target_name = 'cut_all_1200r_20000s'
+target_name = 'base_all_V2'
 train_size_real = 1200
 val_size_real = 200
-train_size_synth = 20000
 val_size_synth = val_size_real
 
 os.makedirs('/cut/datasets/{}/trainA'.format(target_name), exist_ok=True)
@@ -21,18 +19,12 @@ os.makedirs('/cut/datasets/{}/valB'.format(target_name), exist_ok=True)
 os.makedirs('/cut/datasets/{}/valB_seg'.format(target_name), exist_ok=True)
 
 synth_images = os.listdir(os.path.join(synth_dataset, 'images'))
-synth_images = synth_images[:train_size_synth+val_size_synth]
 random.shuffle(synth_images)
 
 trainA_images = random.sample(synth_images, len(synth_images)-val_size_synth)
 valA_images = [x for x in synth_images if x not in trainA_images]
 
-# trainA_images = random.sample(synth_images, len(synth_images)-val_size)
-# valA_images = [x for x in synth_images if x not in trainA_images]
-
-
 real_images = os.listdir(os.path.join(real_dataset, 'images'))
-# real_images = [x for x in os.listdir(os.path.join(real_dataset, 'images')) if 'c' in x]
 random.shuffle(real_images)
 real_images = real_images[:train_size_real+val_size_real]
 

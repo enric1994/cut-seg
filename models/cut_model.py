@@ -62,7 +62,7 @@ class CUTModel(BaseModel):
         # specify the training losses you want to print out.
         # The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE', 'S']
-        self.visual_names = ['real_A', 'real_A_seg', 'segmentation', 'fake_B', 'real_B']
+        self.visual_names = ['real_A', 'real_A_seg', 'segmentation', 'fake_B']
         self.nce_layers = [int(i) for i in self.opt.nce_layers.split(',')]
 
         if opt.nce_idt and self.isTrain:
@@ -79,24 +79,24 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
         
-        # self.netS = smp.Unet(
-        #     encoder_name="resnet18",        
-        #     encoder_weights=opt.weights_encoder,
-        #     in_channels=3,                  
-        #     classes=1,                
-        # )
-        self.netS = smp.MAnet(
-            encoder_name='resnet18',
-            encoder_depth=5, 
+        self.netS = smp.Unet(
+            encoder_name="resnet18",        
             encoder_weights=opt.weights_encoder,
-            decoder_use_batchnorm=True, 
-            decoder_channels=(256, 128, 64, 32, 16), 
-            decoder_pab_channels=64, 
-            in_channels=3, 
-            classes=1, 
-            activation=None, 
-            aux_params=None
-            )
+            in_channels=3,                  
+            classes=1,                
+        )
+        # self.netS = smp.MAnet(
+        #     encoder_name='resnet18',
+        #     encoder_depth=5, 
+        #     encoder_weights=opt.weights_encoder,
+        #     decoder_use_batchnorm=True, 
+        #     decoder_channels=(256, 128, 64, 32, 16), 
+        #     decoder_pab_channels=64, 
+        #     in_channels=3, 
+        #     classes=1, 
+        #     activation=None, 
+        #     aux_params=None
+        #     )
 
         self.netS = self.netS.to(self.gpu_ids[0])
         self.opt = opt

@@ -2,11 +2,13 @@ import argparse
 import bpy
 import random
 import blender_utils as utils
-from dtd_utils import get_random_texture, get_random_polyp, plain_color
+utils.mute()
 import os
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
+# python generate.py --name synth-colonV2 --size 5000
 
 def gen(dataset_version, TOTAL_IMAGES):
     # Make colon
@@ -31,12 +33,12 @@ def gen(dataset_version, TOTAL_IMAGES):
 
 
 
-    for image_number in range(0,TOTAL_IMAGES):
+    for image_number in tqdm(range(0,TOTAL_IMAGES)):
         utils.load_project('/blender/synth/base.blend')
         bpy.ops.curve.primitive_bezier_circle_add()
         b = bpy.data.objects['BezierCircle']
-        b.scale[0] = 4
-        b.scale[1] = 4
+        b.scale[0] = 4.5
+        b.scale[1] = 4.5
 
         cu = bpy.data.curves.new("MyCurveData", "CURVE")
         ob = bpy.data.objects.new("MyCurveObject", cu)
@@ -50,7 +52,7 @@ def gen(dataset_version, TOTAL_IMAGES):
         cu.bevel_object = bpy.data.objects["BezierCircle"]
         cu.taper_object = bpy.data.objects["BezierCircle"]
 
-        max_rand = 0.4
+        max_rand = 0.8
         long_interval = .5
 
         pts = [(0, 0, 0, 1), (1 *  long_interval, random.uniform(-max_rand,max_rand),random.uniform(-max_rand, max_rand), 1), (2 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (3 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (4 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (5 * long_interval, random.uniform(-max_rand, max_rand),random.uniform(-max_rand, max_rand), 1), (6 * long_interval, 0, 0, 1), (7 * long_interval, 0, 0, 1)]
@@ -64,7 +66,8 @@ def gen(dataset_version, TOTAL_IMAGES):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action = 'SELECT')
 
-        bpy.ops.transform.vertex_random(offset=random.uniform(0,0.15), uniform=0.0, normal=0.0, seed=0)
+        deformation = random.uniform(0,0.15)
+        bpy.ops.transform.vertex_random(offset=deformation, uniform=0.0, normal=0.0, seed=0)
         bpy.ops.mesh.vertices_smooth()
         bpy.ops.mesh.vertices_smooth()
         bpy.ops.mesh.vertices_smooth()
@@ -72,9 +75,9 @@ def gen(dataset_version, TOTAL_IMAGES):
 
         #Create material
         mat = bpy.data.materials.new(name="Material")
-        random_shade_1 = random.uniform(0.6,1.2)
-        random_shade_2 = random.uniform(0.6,1.2)
-        random_shade_3 = random.uniform(0.6,1.2)
+        random_shade_1 = random.uniform(0.8,1.2)
+        random_shade_2 = random.uniform(0.8,1.2)
+        random_shade_3 = random.uniform(0.8,1.2)
         mat.diffuse_color=[0.800000 * random_shade_1, 0.18 * random_shade_2, 0.13 * random_shade_3]
 
         # tex = bpy.data.textures.new("SomeName", 'IMAGE')
@@ -92,9 +95,12 @@ def gen(dataset_version, TOTAL_IMAGES):
         # Apply material
         bpy.data.objects['MyCurveObject'].data.materials.append(mat)
 
-
-        num_polyps = 1
-
+        base_location_x = random.uniform(2, 2.3)
+        base_location_y = random.uniform(-1, 1)
+        base_location_z = random.uniform(-1, 1)
+        
+        num_polyps = random.randint(1,8)
+        
         # Make polyps
         for i in range(0,num_polyps):
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -108,23 +114,25 @@ def gen(dataset_version, TOTAL_IMAGES):
             bpy.data.objects[object_name].scale[1] = random.uniform(0.1, 0.5)
             bpy.data.objects[object_name].scale[2] = random.uniform(0.1, 0.5)
 
-            bpy.data.objects[object_name].location[0] = random.uniform(2, 2.3)
-            bpy.data.objects[object_name].location[1] = random.uniform(-1, 1)
-            bpy.data.objects[object_name].location[2] = random.uniform(-1, 1)
+            bpy.data.objects[object_name].location[0] = base_location_x + random.uniform(-0.2, 0.2)
+            bpy.data.objects[object_name].location[1] = base_location_y + random.uniform(-0.2, 0.2)
+            bpy.data.objects[object_name].location[2] = base_location_z + random.uniform(-0.2, 0.2)
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.transform.vertex_random(offset=random.uniform(0,0.05), uniform=0.0, normal=0.0, seed=0)
+            bpy.ops.transform.vertex_random(offset=deformation/2, uniform=0.0, normal=0.0, seed=0)
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
             bpy.ops.mesh.vertices_smooth()
+            # bpy.ops.mesh.vertices_smooth()
+            # bpy.ops.mesh.vertices_smooth()
             bpy.ops.object.mode_set(mode='OBJECT')
 
             #Create material
-            mat = bpy.data.materials.new(name="Material." + str(i))
-            random_shade_1 = random.uniform(0.6,1.2)
-            random_shade_2 = random.uniform(0.6,1.2)
-            random_shade_3 = random.uniform(0.6,1.2)
-            mat.diffuse_color=[0.800000 * random_shade_1, 0.18 * random_shade_2, 0.13 * random_shade_3]
+            # mat = bpy.data.materials.new(name="Material." + str(i))
+            # random_shade_1 = random.uniform(0.6,1.2)
+            # random_shade_2 = random.uniform(0.6,1.2)
+            # random_shade_3 = random.uniform(0.6,1.2)
+            # mat.diffuse_color=[0.800000 * random_shade_1, 0.18 * random_shade_2, 0.13 * random_shade_3]
 
             # tex = bpy.data.textures.new("SomeName." + str(i), 'IMAGE')
             # img = bpy.data.images.load(filepath=plain_color('polyp'))
@@ -289,6 +297,7 @@ def gen(dataset_version, TOTAL_IMAGES):
         # Reset
         bpy.ops.wm.read_factory_settings(use_empty=True)
 
+        # utils.unmute(desc)
 
 
     def remove_empty_masks(dataset_name):
@@ -306,7 +315,7 @@ def gen(dataset_version, TOTAL_IMAGES):
             im=np.asarray(img)
             polyp_pixels = np.count_nonzero(im)
 
-            if polyp_pixels < 20000:
+            if polyp_pixels < 10000:
                 os.remove(clean_dir + image)
                 os.remove(images_dir + image)
 
@@ -318,7 +327,7 @@ def gen(dataset_version, TOTAL_IMAGES):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', type=str, default="test", help='Dataset name')
-parser.add_argument('--size', type=int, default=10, help='Dataset size')
+parser.add_argument('--size', type=int, default=20, help='Dataset size')
 args = parser.parse_args()
 
 gen(args.name, args.size)
