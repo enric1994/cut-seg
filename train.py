@@ -100,8 +100,9 @@ if __name__ == '__main__':
                 
             iter_data_time = time.time()
         
-        model.save_networks(epoch)
-        model.save_networks('latest')
+        if epoch % 20 == 0:
+            model.save_networks(epoch)
+            model.save_networks('latest')
         model.compute_visuals()
         visuals = model.get_current_visuals()
         os.makedirs('/cut/checkpoints/{}/train/epoch_{}'.format(opt.name, epoch), exist_ok=True)
