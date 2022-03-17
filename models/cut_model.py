@@ -8,6 +8,7 @@ import segmentation_models_pytorch as smp
 import torchvision
 from IPython import embed
 
+from .harDMSEG import HarDMSEG
 
 class CUTModel(BaseModel):
     """ This class implements CUT and FastCUT model, described in the paper
@@ -79,12 +80,12 @@ class CUTModel(BaseModel):
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
         
-        self.netS = smp.Unet(
-            encoder_name="resnet18",        
-            encoder_weights=opt.weights_encoder,
-            in_channels=3,                  
-            classes=1,                
-        )
+        # self.netS = smp.Unet(
+        #     encoder_name="resnet18",        
+        #     encoder_weights=opt.weights_encoder,
+        #     in_channels=3,                  
+        #     classes=1,                
+        # )
         # self.netS = smp.MAnet(
         #     encoder_name='resnet18',
         #     encoder_depth=5, 
@@ -97,6 +98,8 @@ class CUTModel(BaseModel):
         #     activation=None, 
         #     aux_params=None
         #     )
+        
+        self.netS = HarDMSEG()
 
         self.netS = self.netS.to(self.gpu_ids[0])
         self.opt = opt
