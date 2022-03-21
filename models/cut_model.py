@@ -10,6 +10,20 @@ from IPython import embed
 
 from .harDMSEG import HarDMSEG
 
+
+def clip_gradient(optimizer, grad_clip):
+    """
+    **code from harDMSEG**
+    For calibrating misalignment gradient via cliping gradient technique
+    :param optimizer:
+    :param grad_clip:
+    :return:
+    """
+    for group in optimizer.param_groups:
+        for param in group['params']:
+            if param.grad is not None:
+                param.grad.data.clamp_(-grad_clip, grad_clip)
+
 class CUTModel(BaseModel):
     """ This class implements CUT and FastCUT model, described in the paper
     Contrastive Learning for Unpaired Image-to-Image Translation
@@ -175,6 +189,7 @@ class CUTModel(BaseModel):
             self.optimizer_F.zero_grad()
         self.loss_G = self.compute_G_loss()
         self.loss_G.backward()
+        clip_gradient(self.optimizer_G, 0.5)
         self.optimizer_G.step()
         if self.opt.netF == 'mlp_sample':
             self.optimizer_F.step()
