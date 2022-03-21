@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-# python generate.py --name synth-colonV2 --size 5000
+# python generate.py --name synth-colonV2 --size 50000
 
 def gen(dataset_version, TOTAL_IMAGES):
     # Make colon

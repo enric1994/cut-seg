@@ -79,6 +79,7 @@ class CUTModel(BaseModel):
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, opt.no_antialias_up, self.gpu_ids, opt)
         self.netF = networks.define_F(opt.input_nc, opt.netF, opt.normG, not opt.no_dropout, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         
+        self.S_w = 0
         
         # self.netS = smp.Unet(
         #     encoder_name="resnet18",        
@@ -236,11 +237,11 @@ class CUTModel(BaseModel):
 
         # Compute segmentation loss
         if self.opt.S_weight_temp:
-            S_w = np.linspace(0, self.opt.S_loss_weight, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.current_epoch-1]
+            self.S_w = np.linspace(0, self.opt.S_loss_weight, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.current_epoch-1]
         else:
-            S_w = self.opt.S_loss_weight
+            self.S_w = self.opt.S_loss_weight
 
-        self.loss_S = S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
+        self.loss_S = self.S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
 
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
         return self.loss_G

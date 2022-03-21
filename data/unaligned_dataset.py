@@ -62,8 +62,8 @@ class UnalignedDataset(BaseDataset):
             A.RandomCrop(width=256, height=256),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.5),
-            A.Rotate(always_apply=False, p=1.0, limit=(-90, 90), interpolation=0, border_mode=0, value=(0, 0, 0), mask_value=None),
-            A.CoarseDropout(always_apply=False, p=1.0, max_holes=3, max_height=59, max_width=60, min_holes=1, min_height=49, min_width=47),
+            A.Rotate(always_apply=False, p=1.0, limit=(-360, 360), interpolation=0, border_mode=0, value=(0, 0, 0), mask_value=None),
+            # A.CoarseDropout(always_apply=False, p=1.0, max_holes=3, max_height=59, max_width=60, min_holes=1, min_height=49, min_width=47),
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])
@@ -91,13 +91,13 @@ class UnalignedDataset(BaseDataset):
 
         A_PIL = pil_loader(A_path) # PIL loads in RGB, the pixels are between 1 and 255, and after converting it to an array the shape is (h, w, 3)
 
-        A_img = np.asarray(self.add_random_text(A_PIL))
+        A_img = np.asarray(A_PIL)
 
         A_seg_img = cv2.imread(A_seg_path, cv2.IMREAD_GRAYSCALE)//255
 
         B_PIL = pil_loader(B_path)
 
-        B_img = np.asarray(self.add_random_text(B_PIL))
+        B_img = np.asarray(B_PIL)
 
 
         is_finetuning = self.opt.isTrain and self.current_epoch > self.opt.n_epochs
@@ -126,7 +126,7 @@ class UnalignedDataset(BaseDataset):
         random_font_name = random.choice([x for x in os.listdir('/cut/fonts/') if '.ttf' in x])
         random_color = random.choice([(0,0,0),(255,255,255)])
 
-        for i in range(random.randint(0,5)):
+        for i in range(random.randint(0,4)):
             random_font_size = random.randint(5, 34)
             random_font = ImageFont.truetype(os.path.join('/cut', 'fonts', random_font_name), random_font_size)
             x_pos = random.randint(0, 256)

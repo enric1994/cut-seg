@@ -129,6 +129,9 @@ if __name__ == '__main__':
         
         lr = model.update_learning_rate()                     # update learning rates at the end of every epoch.
         wandb.log({"learning_rate": lr, "epoch": epoch})
+
+        # Log segmentation weight
+        wandb.log({"S_weight": model.S_w, "epoch": epoch})
     
         # Val dataset
         os.makedirs('/cut/checkpoints/{}/val/epoch_{}'.format(opt.name, epoch), exist_ok=True)
