@@ -1,0 +1,92 @@
+program: train.py
+command:
+  - ${env}
+  - python
+  - ${program}
+  - --dataroot 
+  - ./datasets/finetune_CVC-ColonDB
+  - --name 
+  - sweep_colondb
+  - --n_epochs
+  - 40
+
+
+project: cut-seg
+method: bayes
+metric:
+  name: best_val_mDICE
+  goal: maximize
+parameters:
+# math.log(0.01) = -4.6
+# math.log(0.001) = -6.9
+# math.log(0.0001) = -9.2
+# math.log(0.00001) = -11.5
+# math.log(10) = 2.3
+
+  S_loss_weight:
+    distribution: log_uniform
+    min: -11.5
+    max: -4.6
+  lambda_GAN:
+    distribution: log_uniform
+    min: -6.9
+    max: 0
+  lambda_NCE:
+    distribution: log_uniform
+    min: -6.9
+    max: 2.3
+  lr:
+    distribution: log_uniform
+    min: -11.5
+    max: -9.2
+  S_weight_temp:
+    distribution: categorical
+    values:
+    - True
+    - False
+  no_dropout:
+    distribution: categorical
+    values:
+    - True
+    - False
+  num_patches:
+    distribution: int_uniform
+    min: 64
+    max: 280
+  nce_T:
+    distribution: uniform
+    min: 0.01
+    max: 0.18
+  nce_includes_all_negatives_from_minibatch:
+    distribution: categorical
+    values:
+    - True
+    - False
+  nce_layers:
+    distribution: categorical
+    values:
+    - '0,4,8,12,16'
+    - '1,3,7,11,15'
+    - '0,1,2,3,4'
+    - '12,13,14,15,16'
+  netF_nc:
+    distribution: int_uniform
+    min: 64
+    max: 280
+  
+  # Resolution is increased to 320 when batch size is 2
+  batch_size:
+    distribution: categorical
+    values:
+    - 2
+    - 4
+  netG:
+    distribution: categorical
+    values:
+    - resnet_9blocks
+    - resnet_6blocks
+  
+  n_layers_D:
+    distribution: int_uniform
+    min: 2
+    max: 5
