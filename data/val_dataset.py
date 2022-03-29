@@ -10,7 +10,7 @@ import numpy as np
 
 class ValDataset(Dataset):
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, crop_size):
         self.root_dir = root_dir
         images_path = os.path.join(root_dir, 'valB')
         masks_path = os.path.join(root_dir, 'valB_seg')
@@ -27,7 +27,7 @@ class ValDataset(Dataset):
         self.std=(0.5,0.5,0.5)
         # It is not clear which mean and std we should use in validation and test, it seems that netS trains with perfectly normalized images... 
         self.transform = A.Compose([
-            A.Resize(256,256),
+            A.Resize(crop_size,crop_size),
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])

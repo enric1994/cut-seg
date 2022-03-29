@@ -58,8 +58,8 @@ class UnalignedDataset(BaseDataset):
         self.mean=(0.5,0.5,0.5)
         self.std=(0.5,0.5,0.5)
         self.transform = A.Compose([
-            A.Resize(286,286),
-            A.RandomCrop(width=256, height=256),
+            A.Resize(opt.crop_size + 64 ,opt.crop_size + 64),
+            A.RandomCrop(width=opt.crop_size, height=opt.crop_size),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.5),
             A.Rotate(always_apply=False, p=1.0, limit=(-360, 360), interpolation=0, border_mode=0, value=(0, 0, 0), mask_value=None),

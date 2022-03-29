@@ -24,6 +24,7 @@ import wandb
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
 
+<<<<<<< HEAD
     #init_seed = 123412
     #init_seed = 345677
     init_seed = 987654
@@ -36,6 +37,11 @@ if __name__ == '__main__':
     np.random.seed(init_seed)
     # torch.backends.cudnn.benchmark = False
 
+=======
+    if opt.batch_size==2:
+        opt.crop_size =320
+    
+>>>>>>> 3a0329ab84fbdcb9d56af5771f981e24317ad230
 
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
@@ -50,8 +56,8 @@ if __name__ == '__main__':
 
     opt = wandb.config
 
-    val_data = ValDataset(opt.dataroot)
-    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, num_workers=opt.num_threads)
+    val_data = ValDataset(opt.dataroot, opt.crop_size)
+    val_dataloader = DataLoader(val_data, batch_size=8, shuffle=True, num_workers=opt.num_threads)
     
     iou = smp.utils.metrics.IoU()
     
@@ -224,6 +230,7 @@ if __name__ == '__main__':
 
                 best_dice = current_dice
                 wandb.log({"best_val_mDICE": best_dice, "epoch": epoch})
-        
+            # if epoch > 20 and best_dice < 0.15:
+            #     exit()
         model.netS.train()
         model.netG.train()
