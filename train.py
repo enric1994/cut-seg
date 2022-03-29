@@ -16,12 +16,27 @@ from IPython import embed
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
+import random
 
 import wandb
 
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
+
+    #init_seed = 123412
+    #init_seed = 345677
+    init_seed = 987654
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    torch.backends.cudnn.deterministic = True  # fix the GPU to deterministic mode
+    torch.manual_seed(init_seed)  # CPU seed
+    if device == "cuda":
+        torch.cuda.manual_seed_all(init_seed)  # GPU seed
+    random.seed(init_seed)  # python seed for image transformation
+    np.random.seed(init_seed)
+    # torch.backends.cudnn.benchmark = False
+
+
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
 
@@ -39,7 +54,7 @@ if __name__ == '__main__':
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, num_workers=opt.num_threads)
     
     iou = smp.utils.metrics.IoU()
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
 
     model = create_model(opt)      # create a model given opt.model and other options
 
@@ -132,7 +147,9 @@ if __name__ == '__main__':
 
         # Log segmentation weight
         wandb.log({"S_weight": model.S_w, "epoch": epoch})
-    
+
+
+
         # Val dataset
         os.makedirs('/cut/checkpoints/{}/val/epoch_{}'.format(opt.name, epoch), exist_ok=True)
         
