@@ -24,7 +24,6 @@ import wandb
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
 
-<<<<<<< HEAD
     #init_seed = 123412
     #init_seed = 345677
     init_seed = 987654
@@ -37,11 +36,9 @@ if __name__ == '__main__':
     np.random.seed(init_seed)
     # torch.backends.cudnn.benchmark = False
 
-=======
     if opt.batch_size==2:
         opt.crop_size =320
     
->>>>>>> 3a0329ab84fbdcb9d56af5771f981e24317ad230
 
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
