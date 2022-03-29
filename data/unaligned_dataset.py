@@ -50,6 +50,7 @@ class UnalignedDataset(BaseDataset):
         self.A_paths = sorted(make_dataset(self.dir_A, opt.max_dataset_size))   # load images from '/path/to/data/trainA'
         self.A_seg_paths = sorted(make_dataset(self.dir_A_seg, opt.max_dataset_size))   # load images from '/path/to/data/trainA_seg'
         self.B_paths = sorted(make_dataset(self.dir_B, opt.max_dataset_size))    # load images from '/path/to/data/trainB'
+        self.B_paths = self.B_paths[:opt.real_size]
         self.A_size = len(self.A_paths)  # get the size of dataset A
         self.A_seg_size = len(self.A_seg_paths)  # get the size of dataset A
         self.B_size = len(self.B_paths)  # get the size of dataset B

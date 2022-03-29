@@ -42,11 +42,16 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
 
         parser.add_argument('--S_loss_weight', type=float, default=1.0, help='weight assigned to the segmentation term in the loss')
+        parser.add_argument('--S_weight_step', type=float, default=0.0, help='epoch assigned to start training the segmentation term')
         parser.add_argument('--S_weight_temp', type=util.str2bool, nargs='?', const=False, help='Set to "True" to apply a temoral weight to the segmentation loss')
 
         parser.add_argument('--weights_encoder', type=str, default="imagenet", help="None: segm. net trained from scratch. 'imagenet': pretrained encoder.")
         
         parser.add_argument('--randomSampler', type=util.str2bool, nargs='?', const=True, default=True, help='Randomly sample at every epoch')
+        
+        parser.add_argument('--seed', type=int, default=42, help='Random seed')
+
+        parser.add_argument('--real_size', type=int, default=1000, help='Number of B images to train with')
         
 
         self.isTrain = True

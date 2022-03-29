@@ -26,12 +26,11 @@ if __name__ == '__main__':
 
     #init_seed = 123412
     #init_seed = 345677
-    init_seed = 987654
+    init_seed = opt.seed
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.backends.cudnn.deterministic = True  # fix the GPU to deterministic mode
     torch.manual_seed(init_seed)  # CPU seed
-    if device == "cuda":
-        torch.cuda.manual_seed_all(init_seed)  # GPU seed
+    torch.cuda.manual_seed_all(init_seed)  # GPU seed
     random.seed(init_seed)  # python seed for image transformation
     np.random.seed(init_seed)
     # torch.backends.cudnn.benchmark = False

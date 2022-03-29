@@ -238,6 +238,11 @@ class CUTModel(BaseModel):
         # Compute segmentation loss
         if self.opt.S_weight_temp:
             self.S_w = np.linspace(0, self.opt.S_loss_weight, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.current_epoch-1]
+        elif self.opt.S_weight_step > 0:
+            if self.current_epoch > self.opt.S_weight_step:
+                self.S_w = self.opt.S_loss_weight
+            else:
+                self.S_w = 0.0
         else:
             self.S_w = self.opt.S_loss_weight
 
