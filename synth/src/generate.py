@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-# python generate.py --name synth-colonV2 --size 50000
+# python generate.py --name synth-colonV2.2 --size 100000
 
 def gen(dataset_version, TOTAL_IMAGES):
     # Make colon
@@ -241,33 +241,37 @@ def gen(dataset_version, TOTAL_IMAGES):
 
 
         # # Save 3D object
-        # blend_file_path = bpy.data.filepath
-        # directory = os.path.dirname(blend_file_path)
-        # os.makedirs('/blender/datasets/{}/mesh'.format(dataset_version), exist_ok=True)
-        # target_file = os.path.join('/blender/datasets/{}/mesh'.format(dataset_version), str(image_number).zfill(8) + '.obj')
+        blend_file_path = bpy.data.filepath
+        directory = os.path.dirname(blend_file_path)
+        os.makedirs('/blender/datasets/{}/mesh'.format(dataset_version), exist_ok=True)
+        target_file = os.path.join('/blender/datasets/{}/mesh'.format(dataset_version), str(image_number).zfill(8) + '.obj')
 
-        # bpy.ops.export_scene.obj(filepath=target_file)
+        bpy.ops.export_scene.obj(filepath=target_file)
 
 
         # # Render depth
-        # bpy.data.scenes['Scene'].use_nodes=True
+        os.makedirs('/blender/datasets/{}/depth'.format(dataset_version), exist_ok=True)
+        bpy.data.scenes['Scene'].use_nodes=True
 
-        # bpy.context.scene.use_nodes = True
-        # nodes = bpy.context.scene.node_tree.nodes
-        # output_file = nodes.new("CompositorNodeOutputFile")
-
-
-        # output_file.base_path = '/blender/datasets/{}/depth/'.format(dataset_version)
-        # output_file.format.file_format = 'OPEN_EXR'
-        # tree = bpy.context.scene.node_tree
-        # links = tree.links
-
-        # links.new(tree.nodes[2].inputs[0], tree.nodes[1].outputs[2])
-
-        # bpy.ops.render.render(write_still=True)
+        bpy.context.scene.use_nodes = True
+        nodes = bpy.context.scene.node_tree.nodes
+        output_file = nodes.new("CompositorNodeOutputFile")
 
 
-        utils.save_project('/blender/scene.blend')
+        output_file.base_path = '/blender/datasets/{}/depth/'.format(dataset_version)
+        output_file.format.file_format = 'OPEN_EXR'
+        tree = bpy.context.scene.node_tree
+        links = tree.links
+
+        links.new(tree.nodes[2].inputs[0], tree.nodes[1].outputs[2])
+
+        bpy.ops.render.render(write_still=True)
+        source_file = os.path.join('/blender/datasets/{}/depth'.format(dataset_version), 'Image0001.exr')
+        target_file = os.path.join('/blender/datasets/{}/depth'.format(dataset_version), str(image_number).zfill(8) + '.exr')
+        os.rename(source_file, target_file)
+
+
+        # utils.save_project('/blender/scene.blend')
 
         # Render
         utils.render_keyframes('images', image_number, dataset_version)
@@ -306,6 +310,10 @@ def gen(dataset_version, TOTAL_IMAGES):
 
         clean_dir = '/blender/datasets/{}/masks/'.format(dataset_name)
         images_dir = '/blender/datasets/{}/images/'.format(dataset_name)
+        depth_dir = '/blender/datasets/{}/depth/'.format(dataset_name)
+        mesh_dir = '/blender/datasets/{}/mesh/'.format(dataset_name)
+
+        os.remove(depth_dir + '/Image0000.exr')
 
         images = os.listdir(clean_dir)
 
@@ -318,6 +326,10 @@ def gen(dataset_version, TOTAL_IMAGES):
             if polyp_pixels < 10000:
                 os.remove(clean_dir + image)
                 os.remove(images_dir + image)
+
+                os.remove(depth_dir + image.replace('.png','.exr'))
+                os.remove(mesh_dir + image.replace('.png', '.obj'))
+                os.remove(mesh_dir + image.replace('.png', '.mtl'))
 
                 # print(image)
                 # import pdb;pdb.set_trace()
