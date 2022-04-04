@@ -21,6 +21,11 @@ import random
 import wandb
 
 
+def initialize_model(dataset, model):
+    for i, data in enumerate(dataset):
+        break
+    model.data_dependent_initialize(data)
+
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
 
@@ -35,8 +40,8 @@ if __name__ == '__main__':
     np.random.seed(init_seed)
     # torch.backends.cudnn.benchmark = False
 
-    if opt.batch_size==2:
-        opt.crop_size =320
+    # if opt.batch_size==2:
+    #     opt.crop_size = 320
     
 
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
@@ -53,7 +58,7 @@ if __name__ == '__main__':
     opt = wandb.config
 
     val_data = ValDataset(opt.dataroot, opt.crop_size)
-    val_dataloader = DataLoader(val_data, batch_size=8, shuffle=True, num_workers=opt.num_threads)
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, num_workers=opt.num_threads)
     
     iou = smp.utils.metrics.IoU()
     
@@ -62,9 +67,7 @@ if __name__ == '__main__':
 
     if opt.pretrained_name is not None:
         # if we put opt.continue_train to True this is done in the model.setup of the first epoch
-        for i, data in enumerate(dataset):
-            break
-        model.data_dependent_initialize(data) # this creates the mlp in netF
+        initialize_model(dataset, model)
         model.load_networks('latest')
 
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
@@ -84,6 +87,15 @@ if __name__ == '__main__':
 
         dataset.set_epoch(epoch)
         model.current_epoch = epoch
+        
+        if opt.compute_pl:
+            if epoch == opt.epoch_count:
+                model.dataset_real_size = dataset.dataset.B_size
+                initialize_model(dataset, model)
+            model.compute_pseudolabels(dataset)
+        # print("------------- just after computing pl --------------")
+        # embed()            
+        
         for i, data in enumerate(dataset):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
@@ -142,15 +154,14 @@ if __name__ == '__main__':
                     wandb_images[image_type].append(wandb.Image(img.repeat(3,1,1).float()))
         
             wandb.log({"{}_{}_train_{}".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5), image_type): wandb_images[image_type]})
-
+        # print("------------- just after logging images --------------")
+        # embed()
         
         lr = model.update_learning_rate()                     # update learning rates at the end of every epoch.
         wandb.log({"learning_rate": lr, "epoch": epoch})
 
         # Log segmentation weight
         wandb.log({"S_weight": model.S_w, "epoch": epoch})
-
-
 
         # Val dataset
         os.makedirs('/cut/checkpoints/{}/val/epoch_{}'.format(opt.name, epoch), exist_ok=True)

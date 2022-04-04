@@ -7,6 +7,7 @@ import util.util as util
 import segmentation_models_pytorch as smp
 import torchvision
 from IPython import embed
+import time
 
 from .harDMSEG import HarDMSEG
 
@@ -70,6 +71,11 @@ class CUTModel(BaseModel):
             self.loss_names += ['NCE_Y']
             # self.visual_names += ['idt_B']
 
+        if opt.compute_pl and self.isTrain:
+            self.visual_names += ['pl_B']
+            self.visual_names += ['real_B']
+            # self.visual_names += ['idt_B']            
+
         if self.isTrain:
             self.model_names = ['G', 'F', 'D', 'S']
         else:  # during test time, only load G
@@ -106,6 +112,7 @@ class CUTModel(BaseModel):
         self.opt = opt
         self.current_epoch = 0
 
+
         if self.isTrain:
             self.netD = networks.define_D(opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.normD, opt.init_type, opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
 
@@ -138,7 +145,13 @@ class CUTModel(BaseModel):
         Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
         """
         bs_per_gpu = data["A"].size(0) // max(len(self.opt.gpu_ids), 1)
+
+        if self.opt.compute_pl:
+            segm_shape = data['A_seg'].shape
+            self.pl_real_B = torch.zeros(size = (self.dataset_real_size, segm_shape[1], segm_shape[2], segm_shape[3]))
+
         self.set_input(data)
+
         self.real_A = self.real_A[:bs_per_gpu]
         self.real_B = self.real_B[:bs_per_gpu]
         self.forward()                     # compute fake images: G(A)
@@ -183,6 +196,9 @@ class CUTModel(BaseModel):
         self.real_A_seg = input['A_seg'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        self.current_indexes = input['indexes']
+        if self.opt.compute_pl: 
+            self.pl_B = self.pl_real_B[self.current_indexes]
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
@@ -193,7 +209,13 @@ class CUTModel(BaseModel):
                 self.real = torch.flip(self.real, [3])
 
         self.fake = self.netG(self.real)
-        self.segmentation = self.netS(self.fake[:self.real_A.size(0)])
+        if self.opt.compute_pl:
+            fake_imgs = self.fake[:self.real_A.size(0)]
+            real_imgs = self.real[self.real_A.size(0):] # this is the same as "real_imgs = self.real_B"
+            segm_input = torch.cat((fake_imgs, real_imgs), dim=0)
+            self.segmentation = self.netS(segm_input)
+        else:
+            self.segmentation = self.netS(self.fake[:self.real_A.size(0)])
 
         self.fake_B = self.fake[:self.real_A.size(0)]
         if self.opt.nce_idt:
@@ -246,7 +268,27 @@ class CUTModel(BaseModel):
         else:
             self.S_w = self.opt.S_loss_weight
 
-        self.loss_S = self.S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
+        if self.opt.compute_pl:
+            self.loss_S_A = self.S_w * self.criterionSeg(self.segmentation[:self.opt.batch_size], self.real_A_seg)
+            # self.loss_S_B = self.S_w * self.criterionSeg(self.segmentation[self.opt.batch_size:], self.pl_real_B[self.current_indexes].to(self.device))
+            self.loss_S_B = self.S_w * self.criterionSeg(self.segmentation[self.opt.batch_size:], self.pl_B.to(self.device))
+            
+            if self.opt.loss_pl == "mean":
+                self.loss_S = 0.5 * self.loss_S_A + 0.5 * self.loss_S_B
+            elif self.opt.loss_pl == "linear":
+                pl_w = np.linspace(0, 0.5, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.current_epoch-1]
+                self.loss_S = self.loss_S_A + pl_w * self.loss_S_B
+            elif self.opt.loss_pl == "step":
+                train_ep = self.opt.n_epochs + self.opt.n_epochs_decay
+                pl_ws = np.ones(train_ep) * 0.5
+                pl_ws[:int(train_ep/2)] = 0
+                pl_w = pl_ws[self.current_epoch-1]
+                self.loss_S = self.loss_S_A + pl_w * self.loss_S_B
+        else:
+            segm_target = self.real_A_seg
+            self.loss_S = self.S_w * self.criterionSeg(self.segmentation, self.real_A_seg)
+
+        # self.loss_S = self.S_w * self.criterionSeg(self.segmentation, segm_target)
 
         self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_S
         return self.loss_G
@@ -268,3 +310,31 @@ class CUTModel(BaseModel):
             total_nce_loss += loss.mean()
 
         return total_nce_loss / n_layers
+
+    def compute_pseudolabels(self, dataset):
+        print("Computing pseudo-labels...")
+        st = time.time()
+        '''To try:
+        - Different thresholding values for the masks, different postprocessing of model predictions, ...
+        - Remove the DA when computing PL
+        - Keep DA but compute PL from two augmented views and average the outputs (be carefull with translations)
+        - Use only the PL of the samples that have higher confidence (across the prediction)
+        - Markov Random Fields to impose spatial consistency on the predictions
+        '''
+        dataset.dataset.serial_batches_pl = True # to make sure we visit all the samples  
+        # self.netS.eval()
+        with torch.no_grad():
+            for data_i in dataset:
+                self.set_input(data_i)
+                output_segm = self.netS(self.real_B)
+                out_pl = self.proces_pl(output_segm)
+                self.pl_real_B[self.current_indexes] = out_pl
+
+        print("{} seconds to compute the pseudo-labels".format(time.time() - st))
+        dataset.dataset.serial_batches_pl = self.opt.serial_batches
+        # self.netS.train()
+
+    def proces_pl(self, predictions):
+        mask = torch.zeros(size=predictions.shape)
+        mask[predictions.sigmoid() > 0.5] = 1
+        return mask    

@@ -55,7 +55,6 @@ class UnalignedDataset(BaseDataset):
         self.A_seg_size = len(self.A_seg_paths)  # get the size of dataset A
         self.B_size = len(self.B_paths)  # get the size of dataset B
 
-
         self.mean=(0.5,0.5,0.5)
         self.std=(0.5,0.5,0.5)
         self.transform = A.Compose([
@@ -68,6 +67,18 @@ class UnalignedDataset(BaseDataset):
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])
+
+        if opt.DAtrainB:
+            self.transform_B = self.transform
+        else:
+            self.transform_B = A.Compose([
+                A.Resize(opt.crop_size + 64 ,opt.crop_size + 64),
+                A.CenterCrop(width=opt.crop_size, height=opt.crop_size),
+                A.Normalize(mean=self.mean, std=self.std),
+                ToTensorV2()
+            ])        
+
+        self.serial_batches_pl = self.opt.serial_batches
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.
@@ -83,7 +94,8 @@ class UnalignedDataset(BaseDataset):
         """
         A_path = self.A_paths[index % self.A_size]  # make sure index is within then range
         A_seg_path = self.A_seg_paths[index % self.A_seg_size]  # make sure index is within then range
-        if self.opt.serial_batches:   # make sure index is within then range
+        
+        if self.opt.serial_batches or self.serial_batches_pl:   # make sure index is within then range
             index_B = index % self.B_size
         else:   # randomize the index for domain B to avoid fixed pairs.
             index_B = random.randint(0, self.B_size - 1)
@@ -109,10 +121,10 @@ class UnalignedDataset(BaseDataset):
         A = A_transformed['image']
         A_seg = A_transformed['mask'][None]
 
-        B_transformed = self.transform(image=B_img)
+        B_transformed = self.transform_B(image=B_img)
         B = B_transformed['image']
 
-        return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path}
+        return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path, 'indexes': index_B}
 
     def __len__(self):
         """Return the total number of images in the dataset.
