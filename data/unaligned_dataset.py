@@ -18,6 +18,7 @@ from PIL import ImageDraw
 
 import random
 import string
+import torch
 
 
 class UnalignedDataset(BaseDataset):
@@ -76,7 +77,16 @@ class UnalignedDataset(BaseDataset):
                 A.CenterCrop(width=opt.crop_size, height=opt.crop_size),
                 A.Normalize(mean=self.mean, std=self.std),
                 ToTensorV2()
-            ])        
+            ])
+        
+        if opt.syncPL:
+            self.transform_pl = A.Compose([
+                A.Resize(opt.crop_size + 64 ,opt.crop_size + 64),
+                A.Normalize(mean=self.mean, std=self.std),
+                ToTensorV2()
+            ])
+            self.pl_real_B = torch.zeros(size = (self.B_size, 1, opt.crop_size + 64, opt.crop_size + 64))
+
 
         self.serial_batches_pl = self.opt.serial_batches
 
@@ -121,8 +131,16 @@ class UnalignedDataset(BaseDataset):
         A = A_transformed['image']
         A_seg = A_transformed['mask'][None]
 
-        B_transformed = self.transform_B(image=B_img)
-        B = B_transformed['image']
+        if self.opt.syncPL:
+            B_seg_pl = np.asarray(self.pl_real_B[index_B])[0]
+            B_transformed = self.transform_B(image=B_img, mask=B_seg_pl)
+            B = B_transformed['image']
+            B_pl =  B_transformed['mask'][None]
+            return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, \
+                    'B_paths': B_path, 'B_pl':B_pl, 'indexes': index_B}
+        else:
+            B_transformed = self.transform_B(image=B_img)
+            B = B_transformed['image']
 
         return {'A': A, 'A_seg': A_seg, 'B': B, 'A_paths': A_path, 'A_seg_paths': A_seg_path, 'B_paths': B_path, 'indexes': index_B}
 

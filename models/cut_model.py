@@ -148,7 +148,8 @@ class CUTModel(BaseModel):
 
         if self.opt.compute_pl:
             segm_shape = data['A_seg'].shape
-            self.pl_real_B = torch.zeros(size = (self.dataset_real_size, segm_shape[1], segm_shape[2], segm_shape[3]))
+            # self.pl_real_B = torch.zeros(size = (self.dataset_real_size, segm_shape[1], segm_shape[2], segm_shape[3]))
+            self.pl_real_B = torch.zeros(size = (self.dataset_real_size, segm_shape[1], segm_shape[2] + 64, segm_shape[3] + 64))
 
         self.set_input(data)
 
@@ -198,7 +199,8 @@ class CUTModel(BaseModel):
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
         self.current_indexes = input['indexes']
         if self.opt.compute_pl: 
-            self.pl_B = self.pl_real_B[self.current_indexes]
+            # self.pl_B = self.pl_real_B[self.current_indexes]
+            self.pl_B = input['B_pl']
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
@@ -278,6 +280,8 @@ class CUTModel(BaseModel):
             elif self.opt.loss_pl == "linear":
                 pl_w = np.linspace(0, 0.5, num = self.opt.n_epochs + self.opt.n_epochs_decay)[self.current_epoch-1]
                 self.loss_S = self.loss_S_A + pl_w * self.loss_S_B
+            elif self.opt.loss_pl == "sum05":
+                self.loss_S = self.loss_S_A + 0.5 * self.loss_S_B
             elif self.opt.loss_pl == "step":
                 train_ep = self.opt.n_epochs + self.opt.n_epochs_decay
                 pl_ws = np.ones(train_ep) * 0.5
@@ -323,6 +327,9 @@ class CUTModel(BaseModel):
         '''
         dataset.dataset.serial_batches_pl = True # to make sure we visit all the samples  
         # self.netS.eval()
+        if self.opt.syncPL:
+            temp_DA = dataset.dataset.transform_B
+            dataset.dataset.transform_B = dataset.dataset.transform_pl
         with torch.no_grad():
             for data_i in dataset:
                 self.set_input(data_i)
@@ -331,6 +338,9 @@ class CUTModel(BaseModel):
                 self.pl_real_B[self.current_indexes] = out_pl
 
         print("{} seconds to compute the pseudo-labels".format(time.time() - st))
+        if self.opt.syncPL:
+            dataset.dataset.transform_B = temp_DA
+            dataset.dataset.pl_real_B = self.pl_real_B
         dataset.dataset.serial_batches_pl = self.opt.serial_batches
         # self.netS.train()
 
