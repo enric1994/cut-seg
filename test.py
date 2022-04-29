@@ -4,8 +4,9 @@ from data.test_dataset import TestDataset
 from torch.utils.data import DataLoader
 from util.util import dice_coef
 import segmentation_models_pytorch as smp
+import sys
 
-experiment_name = 'cvc300.test'
+experiment_name = sys.argv[1]
 
 base_path = "/polyp-data/TestDataset"
 dataset_names = ["CVC-300", "CVC-ClinicDB", "CVC-ColonDB", "ETIS-LaribPolypDB", "Kvasir"]

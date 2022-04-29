@@ -2,7 +2,7 @@ import os
 import random
 import shutil
 
-synth_dataset = '/cut/datasets/synth-colonV2'
+synth_dataset = '/synth-colon'
 real_dataset = '/polyp-data/TestDataset'
 dataset_names = [x for x in os.listdir(real_dataset) if x[0] != '.']
 

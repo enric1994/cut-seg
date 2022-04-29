@@ -53,7 +53,7 @@ class TrainOptions(BaseOptions):
 
         parser.add_argument('--real_size', type=int, default=1000, help='Number of B images to train with')
 
-        parser.add_argument('--compute_pl', type=util.str2bool, nargs='?', const=True, default=True, help='Compute pseudo-labels for the real images and use them as inputs for the S network')
+        parser.add_argument('--compute_pl', type=util.str2bool, nargs='?', const=True, default=False, help='Compute pseudo-labels for the real images and use them as inputs for the S network')
         parser.add_argument('--loss_pl', type=str, default="mean", help="Strategy to compute the loss of the pseudo-labels")
         parser.add_argument('--DAtrainB', type=util.str2bool, nargs='?', const=True, default=True, help='Apply or not DA to real_B')
         parser.add_argument('--syncPL', type=util.str2bool, nargs='?', const=False, default=True, help='Synchronize DA from train_B and the corresponding PL')

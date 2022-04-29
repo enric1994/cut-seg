@@ -49,6 +49,7 @@ if __name__ == '__main__':
 
     wandb.init(
     config=opt,
+    mode=args.wandb,
     # tags=[opt.CUT_mode, opt.dataroot, "all", "reversed"],
     project="cut-seg"
     )

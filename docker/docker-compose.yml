@@ -17,14 +17,3 @@ services:
     shm_size: '12gb'
     command: tail /dev/null -f
   
-  blender:
-    image: blender
-    container_name: blender
-    working_dir: /blender
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile.blender
-    volumes:
-      - ../:/blender
-      - /your-folder-path/polyp-data/:/polyp-data:ro
-    command: tail /dev/null -f
