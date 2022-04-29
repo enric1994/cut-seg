@@ -1,7 +1,7 @@
 # Joint one-sided synthetic unpaired image translation and segmentation for colorectal cancer prevention
 
 <p>
-  <img src="demo.png" width="100" />
+  <img src="demo.png" width="400" />
 </p>
 
 ## Abstract
@@ -12,14 +12,16 @@ Deep learning has shown excellent performance in analysing medical images. Howev
 
 * hardnet68.pth pre-trained weights for HarDNet68 can be found [here](https://github.com/PingoLH/Pytorch-HarDNet). Place it in the root folder.
 
-* Required datasets can be found here: [train](https://drive.google.com/file/d/1lODorfB33jbd-im-qrtUgWnZXxB94F55/view?usp=sharing), [test](https://drive.google.com/file/d/1o8OfBvYE6K-EpDyvzsmMPndnUMwb540R/view?usp=sharing), [Synth-Colon](https://enric1994.github.io/synth-colon/). Edit `docker/docker-compose.yml` with the location of your data. It should have the following structure: `polyp-data/{TrainDataset, TestDataset}`
+* Required datasets can be found here: [train (402MB)](https://drive.google.com/file/d/1lODorfB33jbd-im-qrtUgWnZXxB94F55/view?usp=sharing), [test (327MB)](https://drive.google.com/file/d/1o8OfBvYE6K-EpDyvzsmMPndnUMwb540R/view?usp=sharing), [Synth-Colon (41GB)](https://enric1994.github.io/synth-colon/). Edit `docker/docker-compose.yml` with the location of your data. It should have the following structure: `polyp-data/{TrainDataset, TestDataset}`
+
+* For consistency, rename all the `image` and `mask` folders in `TrainDataset` and `TestDataset` to `images` and `masks`.
 
 ## Training
 1. Run `docker-compose up -d` in the `docker/` folder. It will start a container with all the dependencies installed.
 
 2. Open the container CLI `docker exec -it cut bash`
 
-3. Prepare datasets: `python /cut/data/prepare_datasets_finetuning.py`
+3. Prepare datasets: `python /cut/data/prepare_datasets_finetuning.py`. This step will take around 10 minutes.
 
 4. Train on the Kvasir dataset:
 

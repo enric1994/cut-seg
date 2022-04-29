@@ -29,8 +29,6 @@ def initialize_model(dataset, model):
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
 
-    #init_seed = 123412
-    #init_seed = 345677
     init_seed = opt.seed
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.backends.cudnn.deterministic = True  # fix the GPU to deterministic mode
@@ -38,19 +36,13 @@ if __name__ == '__main__':
     torch.cuda.manual_seed_all(init_seed)  # GPU seed
     random.seed(init_seed)  # python seed for image transformation
     np.random.seed(init_seed)
-    # torch.backends.cudnn.benchmark = False
-
-    # if opt.batch_size==2:
-    #     opt.crop_size = 320
-    
 
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
 
     wandb.init(
     config=opt,
-    mode=args.wandb,
-    # tags=[opt.CUT_mode, opt.dataroot, "all", "reversed"],
+    mode=opt.wandb,
     project="cut-seg"
     )
 
@@ -67,7 +59,6 @@ if __name__ == '__main__':
     model = create_model(opt)      # create a model given opt.model and other options
 
     if opt.pretrained_name is not None:
-        # if we put opt.continue_train to True this is done in the model.setup of the first epoch
         initialize_model(dataset, model)
         model.load_networks('latest')
 
@@ -94,8 +85,6 @@ if __name__ == '__main__':
                 model.dataset_real_size = dataset.dataset.B_size
                 initialize_model(dataset, model)
             model.compute_pseudolabels(dataset)
-        # print("------------- just after computing pl --------------")
-        # embed()            
         
         for i, data in enumerate(dataset):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
@@ -155,8 +144,6 @@ if __name__ == '__main__':
                     wandb_images[image_type].append(wandb.Image(img.repeat(3,1,1).float()))
         
             wandb.log({"{}_{}_train_{}".format(str((opt.n_epochs + opt.n_epochs_decay) - epoch).zfill(5), str(epoch).zfill(5), image_type): wandb_images[image_type]})
-        # print("------------- just after logging images --------------")
-        # embed()
         
         lr = model.update_learning_rate()                     # update learning rates at the end of every epoch.
         wandb.log({"learning_rate": lr, "epoch": epoch})
@@ -238,7 +225,5 @@ if __name__ == '__main__':
 
                 best_dice = current_dice
                 wandb.log({"best_val_mDICE": best_dice, "epoch": epoch})
-            # if epoch > 20 and best_dice < 0.15:
-            #     exit()
         model.netS.train()
         model.netG.train()
